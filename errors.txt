@@ -1,0 +1,26 @@
+src/shared/hooks/useToast.ts(64,14): error TS1005: '>' expected.
+src/shared/hooks/useToast.ts(64,23): error TS1005: ')' expected.
+src/shared/hooks/useToast.ts(66,25): error TS1005: ',' expected.
+src/shared/hooks/useToast.ts(67,22): error TS1005: '>' expected.
+src/shared/hooks/useToast.ts(67,25): error TS1005: ')' expected.
+src/shared/hooks/useToast.ts(67,30): error TS1005: ',' expected.
+src/shared/hooks/useToast.ts(67,36): error TS1005: ',' expected.
+src/shared/hooks/useToast.ts(67,49): error TS1136: Property assignment expected.
+src/shared/hooks/useToast.ts(67,175): error TS1005: ',' expected.
+src/shared/hooks/useToast.ts(68,15): error TS1005: '>' expected.
+src/shared/hooks/useToast.ts(68,24): error TS1005: ';' expected.
+src/shared/hooks/useToast.ts(68,57): error TS1005: ',' expected.
+src/shared/hooks/useToast.ts(68,69): error TS1161: Unterminated regular expression literal.
+src/shared/hooks/useToast.ts(69,22): error TS1005: ';' expected.
+src/shared/hooks/useToast.ts(69,33): error TS1136: Property assignment expected.
+src/shared/hooks/useToast.ts(69,36): error TS1005: ';' expected.
+src/shared/hooks/useToast.ts(69,56): error TS1128: Declaration or statement expected.
+src/shared/hooks/useToast.ts(70,13): error TS1127: Invalid character.
+src/shared/hooks/useToast.ts(71,2): error TS1110: Type expected.
+src/shared/hooks/useToast.ts(72,6): error TS1161: Unterminated regular expression literal.
+src/shared/hooks/useToast.ts(73,7): error TS1128: Declaration or statement expected.
+src/shared/hooks/useToast.ts(73,8): error TS1128: Declaration or statement expected.
+src/shared/hooks/useToast.ts(73,9): error TS1128: Declaration or statement expected.
+src/shared/hooks/useToast.ts(74,2): error TS1110: Type expected.
+src/shared/hooks/useToast.ts(75,3): error TS1128: Declaration or statement expected.
+src/shared/hooks/useToast.ts(76,1): error TS1128: Declaration or statement expected.

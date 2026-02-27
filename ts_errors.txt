@@ -1,0 +1,42 @@
+src/app/providers/AuthProvider.tsx(1,59): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/providers/AuthProvider.tsx(5,10): error TS1484: 'User' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/providers/AuthProvider.tsx(53,90): error TS6133: 'session' is declared but its value is never read.
+src/features/admin/components/ActivityLog.tsx(4,10): error TS1484: 'AttendanceLog' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/components/StatsCard.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/components/WeekUploader.tsx(1,28): error TS1484: 'DragEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/components/WeekUploader.tsx(1,39): error TS1484: 'ChangeEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/components/WeekUploader.tsx(4,55): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/admin/hooks/useStats.ts(4,10): error TS1484: 'ScheduleStats' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/hooks/useStats.ts(4,25): error TS1484: 'AttendanceLog' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/admin/pages/AdminDashboard.tsx(6,55): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/admin/pages/ReportsPage.tsx(9,42): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/admin/pages/ReportsPage.tsx(11,10): error TS1484: 'AttendanceLog' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/auth/hooks/useAuth.ts(2,23): error TS1484: 'AuthContextType' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/auth/pages/LoginPage.tsx(1,20): error TS1484: 'FormEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/auth/pages/LoginPage.tsx(9,41): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/supervisor/components/AttendanceButton.tsx(2,26): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/supervisor/components/ScheduleCard.tsx(5,67): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/supervisor/components/ScheduleCard.tsx(7,10): error TS1484: 'Schedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/supervisor/components/SearchBar.tsx(1,27): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/features/supervisor/hooks/useAttendance.ts(6,10): error TS1484: 'Schedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/supervisor/hooks/useScheduleSearch.ts(3,10): error TS1484: 'Schedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/features/supervisor/pages/SupervisorPage.tsx(6,30): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/services/excel/parser.service.ts(2,10): error TS1484: 'Schedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/supabase/attendance.service.ts(2,10): error TS1484: 'AttendanceLog' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/supabase/attendance.service.ts(56,42): error TS6133: 'weekId' is declared but its value is never read.
+src/services/supabase/auth.service.ts(2,1): error TS6133: 'SupabaseUser' is declared but its value is never read.
+src/services/supabase/auth.service.ts(2,10): error TS1484: 'User' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/supabase/auth.service.ts(3,10): error TS1484: 'User' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/supabase/schedule.service.ts(2,10): error TS1484: 'Schedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/supabase/schedule.service.ts(2,20): error TS1484: 'ScheduleStats' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/layout/Layout.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/layout/Navbar.tsx(1,30): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/shared/components/layout/ProtectedRoute.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/Badge.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/Button.tsx(1,22): error TS1484: 'ButtonHTMLAttributes' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/Button.tsx(1,44): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/Card.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/ErrorMessage.tsx(1,29): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/shared/components/ui/Input.tsx(1,22): error TS1484: 'InputHTMLAttributes' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/Input.tsx(1,43): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+\n

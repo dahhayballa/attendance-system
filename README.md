@@ -1,73 +1,83 @@
-# React + TypeScript + Vite
+# 🎓 نظام إدارة الحضور - المدرسة الفنية (EETFP MPG NKTT)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+نظام حديث مبني بتقنية React لرقمنة وتسريع عملية تسجيل الحضور للمدرسين والمراقبين.
 
-Currently, two official plugins are available:
+## ✨ الميزات الأساسية
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **نظام مصادقة آمن:** تسجيل دخول مخصص للمدراء والمراقبين مع حماية المسارات (Role-Based Access Control).
+*   **لوحة تحكم المدير:**
+    *   إحصائيات فورية (إجمالي الحصص، المسجلة، قيد الانتظار، نسبة الحضور).
+    *   رفع جدول الأسبوع بسهولة عن طريق ملفات Excel مع التحقق الآلي من صحة البيانات.
+    *   سجل النشاطات الحديثة لمعرفة من سجل الحضور ومتى.
+    *   تقارير مفصلة مع إمكانية التصدير إلى ملف Excel.
+*   **واجهة المراقب التفاعلية:**
+    *   بحث فوري وسريع عن الأستاذ لتسجيل حضوره.
+    *   بطاقات بتصميم جذاب توضح حالة الحصة مفصلة.
+    *   تسجيل الحضور / الغياب بضغطة زر.
+*   **تصميم احترافي (UI/UX):**
+    *   واجهة مستخدم عربية (RTL) متكاملة.
+    *   ألوان متناسقة، حركات خفيفة (Micro-animations).
+    *   تجاوب كامل (Responsive) لتناسب جميع الشاشات.
 
-## React Compiler
+## 🛠 التقنيات المستخدمة
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **إطار العمل:** React + Vite
+*   **توجيه الصفحات:** React Router v6
+*   **تنسيق الواجهة:** Tailwind CSS v3
+*   **واجهة الواجهة:** Vanilla CSS لبعض التحسينات الإضافية (مثل: RTL).
+*   **الخدمة الخلفية وقاعدة البيانات:** Supabase
+*   **التعامل مع الإكسل:** `xlsx`
+*   **الأيقونات:** `lucide-react`
 
-## Expanding the ESLint configuration
+## 📂 هيكلية المشروع (التصميم النظيف Clean Architecture)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+يعتمد هذا المشروع على هيكلية تفصل بين الخدمات، الواجهات المشتركة، والخصائص المستقلة:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/
+├── app/                          # إدخالات التطبيق الرئيسية والمسارات ومزود الإعدادات
+├── config/                       # إعدادات النظام الداخلية
+├── features/                     # تقسيم المهام الرئيسية حسب مجالات الاستخدام (Auth, Admin, Supervisor)
+│   ├── auth/
+│   ├── admin/
+│   └── supervisor/
+├── services/                     # الخدمات الخارجية كالتعامل مع قواعد بيانات Supabase ومعالجة Excel
+├── shared/                       # المكونات، الأدوات، والخُطّافات (Hooks) القابلة لإعادة الاستخدام في أكثر من مكان
+│   ├── components/
+│   ├── hooks/
+│   └── utils/
+├── styles/                       # التنسيقات العامة للمشروع، ومخصصة للتوجه من اليمين لليسار (RTL)
+└── main.jsx                      # ملف الإدخال الرئيسي
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🚀 كيفية تشغيل المشروع
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 1. المتطلبات الأساسية
+- تثبيت Node.js.
+- حساب في Supabase جاهز ويحتوي على قاعدة البيانات المطلوبة.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. تثبيت الحزم
+```bash
+npm install
 ```
+
+### 3. إعداد متغيرات البيئة
+قم بإنشاء ملف `.env` في جذر المشروع، وأضف متغيرات Supabase الخاصة بك:
+
+```env
+VITE_SUPABASE_URL=رابط_مشروعك_هنا
+VITE_SUPABASE_ANON_KEY=المفتاح_العام_هنا
+```
+
+### 4. تشغيل خادم التطوير
+```bash
+npm run dev
+```
+
+### 5. بناء نسخة للإنتاج (Production)
+```bash
+npm run build
+```
+
+---
+تم تطويره بناءً على أفضل المعايير المهنية لتطبيق React قابل للتوسع والتطوير المستقبلي.

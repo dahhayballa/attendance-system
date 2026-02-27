@@ -26,13 +26,38 @@ export const useWeekUpload = () => {
             setUploadProgress(50);
 
             const weekName = `الأسبوع ${new Date().toLocaleDateString('ar-MA')}`;
-            const { data: weekData, error: weekError } = await supabase
-                .from('weeks')
-                .insert([{ name: weekName, start_date: new Date().toISOString() }])
-                .select()
-                .single();
+            const startDate = new Date().toISOString().split('T')[0];
+            const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const weekId = `WEEK-${Date.now()}`;
 
-            if (weekError) throw weekError;
+            // التحقق من وجود الأسبوع
+            const { data: existingWeek, error: checkError } = await supabase
+                .from('weeks')
+                .select('id')
+                .eq('start_date', startDate)
+                .maybeSingle();
+
+            if (checkError) throw checkError;
+
+            let weekData;
+            if (existingWeek) {
+                weekData = existingWeek;
+                toast.info('هذا الأسبوع موجود مسبقاً، سيتم إضافة الحصص إليه');
+            } else {
+                const { data: newWeek, error: weekError } = await supabase
+                    .from('weeks')
+                    .insert([{ 
+                        name: weekName, 
+                        start_date: startDate,
+                        end_date: endDate,
+                        week_id: weekId
+                    }])
+                    .select()
+                    .single();
+
+                if (weekError) throw weekError;
+                weekData = newWeek;
+            }
             setUploadProgress(70);
 
             const schedules = transformToSchedules(jsonData, weekData.id);

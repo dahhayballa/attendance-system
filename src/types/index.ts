@@ -7,13 +7,13 @@ export interface User {
 export interface Schedule {
     id: string;
     week_id: string;
-    day_name: string;
+    day: string;
     time_start: string;
     time_end: string;
-    teacher_name: string;
+    teacher: string;
     subject: string;
-    class_name: string;
-    room_name?: string | null;
+    class: string;
+    room?: string | null;
     status: 'pending' | 'present' | 'absent';
     recorded_by?: string | null;
     recorded_at?: string | null;
@@ -34,9 +34,9 @@ export interface AttendanceLog {
     subject?: string;
     user_name?: string;
     schedule?: {
-        teacher_name: string;
+        teacher: string;
         subject: string;
-        class_name: string;
+        class: string;
     };
     user?: {
         email: string;

@@ -6,7 +6,7 @@ export const createAttendanceLog = async (scheduleId: string, userId: string, st
         .from('attendance_logs')
         .insert([{
             schedule_id: scheduleId,
-            user_id: userId,
+            recorded_by: userId,
             status
         }])
         .select()
@@ -28,11 +28,11 @@ export const getAttendanceLogs = async (filters: LogsFilters = {}): Promise<Atte
         .select(`
       id,
       status,
-      created_at,
-      schedule:schedules!attendance_logs_schedule_id_fkey(teacher_name, subject, class_name),
-      user:users!attendance_logs_user_id_fkey(email)
+      recorded_at,
+      schedule:schedules!attendance_logs_schedule_id_fkey(teacher, subject, class),
+      user:users!attendance_logs_recorded_by_fkey(email)
     `)
-        .order('created_at', { ascending: false });
+        .order('recorded_at', { ascending: false });
 
     if (filters.limit) {
         query = query.limit(filters.limit);
@@ -43,11 +43,11 @@ export const getAttendanceLogs = async (filters: LogsFilters = {}): Promise<Atte
 
     return data.map((log: any) => ({
         id: log.id,
-        schedule_id: '', // typically omitted in this specific join, but part of TS interface
+        schedule_id: '',
         user_id: '',
         status: log.status,
-        created_at: log.created_at,
-        teacher_name: log.schedule?.teacher_name,
+        created_at: log.recorded_at,
+        teacher_name: log.schedule?.teacher,
         subject: log.schedule?.subject,
         user_name: log.user?.email ? log.user.email.split('@')[0] : 'مجهول',
     }));

@@ -5,12 +5,15 @@ import ReportsPage from '../features/admin/pages/ReportsPage';
 import SupervisorPage from '../features/supervisor/pages/SupervisorPage';
 import ProtectedRoute from '../shared/components/layout/ProtectedRoute';
 import { useAuth } from '../features/auth/hooks/useAuth';
+import Loading from '../shared/components/ui/Loading';
 
 export const Router = () => {
     const { isAuthenticated, userRole, loading } = useAuth();
 
+    // ✅ Afficher un spinner pendant que la session est vérifiée
+    // (ne jamais retourner null → page blanche)
     if (loading) {
-        return null; // The AuthProvider or App handles initial loading state
+        return <Loading fullScreen text="جاري التحقق من الجلسة..." />;
     }
 
     return (

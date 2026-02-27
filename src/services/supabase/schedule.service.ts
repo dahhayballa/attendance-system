@@ -8,8 +8,8 @@ export const searchSchedulesByTeacher = async (teacherName: string): Promise<Sch
       *,
       recorded_by_user:users!schedules_recorded_by_fkey(id, email, role)
     `)
-        .ilike('teacher_name', `%${teacherName}%`)
-        .order('day_name', { ascending: true })
+        .ilike('teacher', `%${teacherName}%`)
+        .order('day', { ascending: true })
         .order('time_start', { ascending: true });
 
     if (error) throw error;
@@ -40,7 +40,7 @@ export const getSchedulesByWeek = async (weekId: string): Promise<Schedule[]> =>
       recorded_by_user:users!schedules_recorded_by_fkey(id, email)
     `)
         .eq('week_id', weekId)
-        .order('day_name', { ascending: true })
+        .order('day', { ascending: true })
         .order('time_start', { ascending: true });
 
     if (error) throw error;

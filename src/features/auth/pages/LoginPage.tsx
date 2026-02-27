@@ -46,13 +46,17 @@ export const LoginPage = () => {
                 return;
             }
 
+            if (!data) return;
+
             // Check where user came from, or default based on role
             const from = (location.state as any)?.from?.pathname;
             if (from) {
                 navigate(from, { replace: true });
             } else {
-                const userRole = data?.user?.role;
-                navigate(userRole === 'admin' ? '/admin' : '/supervisor', { replace: true });
+                // ✅ FIX : utilise data.resolvedUser qui contient le rôle de public.users
+                // data?.user est l'objet Auth Supabase (sans 'role') → on lisait toujours undefined
+                const resolvedRole = data?.resolvedUser?.role;
+                navigate(resolvedRole === 'admin' ? '/admin' : '/supervisor', { replace: true });
             }
 
         } catch (err: any) {

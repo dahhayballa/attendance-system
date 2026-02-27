@@ -46,13 +46,13 @@ export const validateScheduleData = (data: any[]): { valid: boolean; errors: str
 export const transformToSchedules = (data: any[], weekId: string): Partial<Schedule>[] => {
     return data.map(row => ({
         week_id: weekId,
-        day_name: row['اليوم']?.toString().trim() || '',
+        day: row['اليوم']?.toString().trim() || '',
         time_start: row['من الساعة']?.toString().trim() || '',
         time_end: row['إلى الساعة']?.toString().trim() || '',
-        teacher_name: row['الأستاذ']?.toString().trim() || '',
+        teacher: row['الأستاذ']?.toString().trim() || '',
         subject: row['المادة']?.toString().trim() || '',
-        class_name: row['الفصل']?.toString().trim() || '',
-        room_name: row['القاعة']?.toString().trim() || null,
+        class: row['الفصل']?.toString().trim() || '',
+        room: row['القاعة']?.toString().trim() || null,
         status: 'pending'
     }));
 };

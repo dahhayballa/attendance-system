@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 import Loading from '../ui/Loading';
 
@@ -10,10 +11,11 @@ export interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children, requireRole }: ProtectedRouteProps) => {
     const { isAuthenticated, loading, userRole } = useAuth();
+    const { t } = useTranslation();
     const location = useLocation();
 
     if (loading) {
-        return <Loading fullScreen text="جاري التحقق من الصلاحيات..." />;
+        return <Loading fullScreen text={t('protectedRoute.verifyingPermissions')} />;
     }
 
     if (!isAuthenticated) {

@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabase/client';
 import { loginWithEmail, logoutUser } from '../../services/supabase/auth.service';
 import { useToast } from '../../shared/hooks/useToast';
 import { User } from '../../types';
+import i18n from '../../i18n';
 
 export interface AuthContextType {
     user: User | null;
@@ -152,13 +153,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 };
                 setUser(currentUser);
                 setUserRole(role);
-                toast.success('تم تسجيل الدخول بنجاح');
+                toast.success(i18n.t('authProvider.loginSuccess'));
                 return { data: { ...data, resolvedUser: currentUser }, error: null };
             }
 
             return { data, error: null };
         } catch (error: any) {
-            toast.error(error.message || 'فشل في تسجيل الدخول');
+            toast.error(error.message || i18n.t('authProvider.loginFailed'));
             return { data: null, error };
         } finally {
             setLoading(false);
@@ -171,9 +172,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             await logoutUser();
             setUser(null);
             setUserRole(null);
-            toast.success('تم تسجيل الخروج');
+            toast.success(i18n.t('authProvider.logoutSuccess'));
         } catch {
-            toast.error('حدث خطأ أثناء تسجيل الخروج');
+            toast.error(i18n.t('authProvider.logoutError'));
         } finally {
             setLoading(false);
         }

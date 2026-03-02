@@ -1,3 +1,7 @@
+
+> attendance-system@0.0.0 build
+> tsc -b && vite build
+
 src/features/supervisor/components/ReportsPanel.tsx(2,30): error TS6133: 'ReportData' is declared but its value is never read.
 src/features/supervisor/components/ReportsPanel.tsx(7,5): error TS6133: 'ChevronDown' is declared but its value is never read.
 src/features/supervisor/components/ReportsPanel.tsx(7,18): error TS6133: 'Image' is declared but its value is never read.

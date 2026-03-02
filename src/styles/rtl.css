@@ -1,21 +1,36 @@
 /* src/styles/rtl.css */
-body {
+html[dir="rtl"] body {
   direction: rtl;
   text-align: right;
   /* Use a nice standard font supporting Arabic */
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-input, textarea, select {
+html[dir="ltr"] body {
+  direction: ltr;
+  text-align: left;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
   text-align: right;
   direction: rtl;
 }
 
+html[dir="ltr"] input,
+html[dir="ltr"] textarea,
+html[dir="ltr"] select {
+  text-align: left;
+  direction: ltr;
+}
+
 /* Override Tailwind utilities for RTL where necessary if not using ltr/rtl prefixes */
-.text-left {
+html[dir="rtl"] .text-left {
   text-align: right !important;
 }
 
-.text-right {
+html[dir="rtl"] .text-right {
   text-align: left !important;
 }

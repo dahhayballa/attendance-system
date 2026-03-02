@@ -1,19 +1,30 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LoginPage from '../features/auth/pages/LoginPage';
 import AdminDashboard from '../features/admin/pages/AdminDashboard';
-import ReportsPage from '../features/admin/pages/ReportsPage';
-import SupervisorPage from '../features/supervisor/pages/SupervisorPage';
+import AdminReportsPage from '../features/admin/pages/ReportsPage';
+import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
+import StatisticsPage from '../features/supervisor/pages/StatisticsPage';
+import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
+import SettingsPage from '../features/supervisor/pages/SettingsPage';
+
+// Attendance Sub-pages
+import AttendanceRecordPage from '../features/supervisor/pages/attendance/AttendanceRecordPage';
+import AttendanceRecordsPage from '../features/supervisor/pages/attendance/AttendanceRecordsPage';
+import TeacherProfilesPage from '../features/supervisor/pages/attendance/TeacherProfilesPage';
+import AttendanceCalendarPage from '../features/supervisor/pages/attendance/AttendanceCalendarPage';
+import AbsentListPage from '../features/supervisor/pages/attendance/AbsentListPage';
+
 import ProtectedRoute from '../shared/components/layout/ProtectedRoute';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import Loading from '../shared/components/ui/Loading';
 
 export const Router = () => {
+    const { t } = useTranslation();
     const { isAuthenticated, userRole, loading } = useAuth();
 
-    // ✅ Afficher un spinner pendant que la session est vérifiée
-    // (ne jamais retourner null → page blanche)
     if (loading) {
-        return <Loading fullScreen text="جاري التحقق من الجلسة..." />;
+        return <Loading fullScreen text={t('common.verifyingSession')} />;
     }
 
     return (
@@ -43,7 +54,7 @@ export const Router = () => {
                 path="/admin/reports"
                 element={
                     <ProtectedRoute requireRole="admin">
-                        <ReportsPage />
+                        <AdminReportsPage />
                     </ProtectedRoute>
                 }
             />
@@ -53,7 +64,74 @@ export const Router = () => {
                 path="/supervisor"
                 element={
                     <ProtectedRoute requireRole="supervisor">
-                        <SupervisorPage />
+                        <SupervisorDashboard />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/statistics"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <StatisticsPage />
+                    </ProtectedRoute>
+                }
+            />
+
+            {/* Attendance Routes */}
+            <Route
+                path="/supervisor/attendance"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <AttendanceRecordPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/attendance/records"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <AttendanceRecordsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/attendance/teachers"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <TeacherProfilesPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/attendance/calendar"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <AttendanceCalendarPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/attendance/absent"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <AbsentListPage />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/supervisor/reports"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <SupervisorReportsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/settings"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <SettingsPage />
                     </ProtectedRoute>
                 }
             />

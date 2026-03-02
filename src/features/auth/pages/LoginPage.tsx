@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import Card from '../../../shared/components/ui/Card';
 import Input from '../../../shared/components/ui/Input';
@@ -7,6 +8,7 @@ import Button from '../../../shared/components/ui/Button';
 import ErrorMessage from '../../../shared/components/ui/ErrorMessage';
 import { validateEmail, validatePassword } from '../../../shared/utils/validators';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import LanguageSwitcher from '../../../shared/components/ui/LanguageSwitcher';
 
 export const LoginPage = () => {
     const [email, setEmail] = useState<string>('');
@@ -17,6 +19,7 @@ export const LoginPage = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const { login } = useAuth();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -75,10 +78,10 @@ export const LoginPage = () => {
                     </div>
                 </div>
                 <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-                    تسجيل الدخول
+                    {t('auth.loginTitle')}
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
-                    نظام إدارة الحضور - EETFP MPG NKTT
+                    {t('auth.loginSubtitle')}
                 </p>
             </div>
 
@@ -88,10 +91,14 @@ export const LoginPage = () => {
 
                         {authError && <ErrorMessage message={authError} />}
 
+                        <div className="flex justify-end">
+                            <LanguageSwitcher />
+                        </div>
+
                         <Input
                             id="email"
                             type="email"
-                            label="البريد الإلكتروني"
+                            label={t('auth.emailLabel')}
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value);
@@ -99,7 +106,7 @@ export const LoginPage = () => {
                             }}
                             error={errors.email}
                             leftIcon={<Mail className="h-5 w-5" />}
-                            placeholder="admin@example.com"
+                            placeholder={t('auth.emailPlaceholder')}
                             autoComplete="email"
                             required
                         />
@@ -107,7 +114,7 @@ export const LoginPage = () => {
                         <Input
                             id="password"
                             type={showPassword ? 'text' : 'password'}
-                            label="كلمة المرور"
+                            label={t('auth.passwordLabel')}
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
@@ -120,12 +127,12 @@ export const LoginPage = () => {
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="hover:text-blue-500 focus:outline-none transition-colors"
-                                    aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                                    aria-label={showPassword ? t('auth.passwordLabel') : t('auth.passwordLabel')}
                                 >
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             }
-                            placeholder="••••••••"
+                            placeholder={t('auth.passwordPlaceholder')}
                             autoComplete="current-password"
                             required
                         />
@@ -137,7 +144,7 @@ export const LoginPage = () => {
                             loading={isLoading}
                             className="py-3 shadow-md hover:shadow-lg mt-8 text-lg"
                         >
-                            دخول
+                            {t('auth.loginButton')}
                         </Button>
                     </form>
                 </Card>

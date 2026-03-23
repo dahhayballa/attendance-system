@@ -1,9 +1,9 @@
-import { createContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase/client';
 import { loginWithEmail, logoutUser } from '../../services/supabase/auth.service';
 import { useToast } from '../../shared/hooks/useToast';
 import { User } from '../../types';
-import i18n from '../../i18n';
 
 export interface AuthContextType {
   user: User | null;
@@ -65,10 +65,25 @@ const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supe
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'supervisor' | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'supervisor' | null>(() => {
+    return localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const isMounted = useRef(true);
+  const navigate = useNavigate();
+
+  /**
+   * 🧹 Clear all auth state — shared by logout() and token-expiry handler
+   */
+  const clearAuthState = useCallback(() => {
+    if (isMounted.current) {
+      setUser(null);
+      setUserRole(null);
+      setLoading(false);
+      localStorage.removeItem('userRole');
+    }
+  }, []);
 
   useEffect(() => {
     isMounted.current = true;
@@ -79,10 +94,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const role = await fetchUserRoleWithTimeout(session.user.id);
-          if (isMounted.current) {
-            setUser({ id: session.user.id, email: session.user.email!, role });
-            setUserRole(role);
+          const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+          
+          if (cachedRole && isMounted.current) {
+            setUser({ id: session.user.id, email: session.user.email!, role: cachedRole });
+            setUserRole(cachedRole);
+            setLoading(false); // Stop loading immediately for instant UI
+
+            // Fetch after 10ms to yield thread to rendering
+            setTimeout(async () => {
+              if (!isMounted.current) return;
+              const role = await fetchUserRoleWithTimeout(session.user.id);
+              if (role && role !== cachedRole && isMounted.current) {
+                localStorage.setItem('userRole', role);
+                setUser({ id: session.user.id, email: session.user.email!, role });
+                setUserRole(role);
+              }
+            }, 10);
+          } else {
+            const role = await fetchUserRoleWithTimeout(session.user.id);
+            if (role) {
+              localStorage.setItem('userRole', role);
+            }
+            if (isMounted.current) {
+              setUser({ id: session.user.id, email: session.user.email!, role });
+              setUserRole(role);
+            }
           }
         }
       } catch (err) {
@@ -98,18 +135,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log(`[AuthProvider] حدث خارجي: ${event}`);
 
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        const role = await fetchUserRoleWithTimeout(session.user.id);
-        if (isMounted.current) {
-          setUser({ id: session.user.id, email: session.user.email!, role });
-          setUserRole(role);
+        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+        
+        if (cachedRole && isMounted.current) {
+          setUser({ id: session.user.id, email: session.user.email!, role: cachedRole });
+          setUserRole(cachedRole);
           setLoading(false);
+
+          setTimeout(async () => {
+            if (!isMounted.current) return;
+            const role = await fetchUserRoleWithTimeout(session.user.id);
+            if (role && role !== cachedRole && isMounted.current) {
+              localStorage.setItem('userRole', role);
+              setUser({ id: session.user.id, email: session.user.email!, role });
+              setUserRole(role);
+            }
+          }, 10);
+        } else {
+          const role = await fetchUserRoleWithTimeout(session.user.id);
+          if (role) localStorage.setItem('userRole', role);
+          if (isMounted.current) {
+            setUser({ id: session.user.id, email: session.user.email!, role });
+            setUserRole(role);
+          }
         }
+        
+        if (isMounted.current) setLoading(false);
       } else if (event === 'SIGNED_OUT') {
-        if (isMounted.current) {
-          setUser(null);
-          setUserRole(null);
-          setLoading(false);
-        }
+        // ✅ Clear state and redirect — covers both manual logout and server-side revocation
+        clearAuthState();
+        navigate('/login', { replace: true });
       }
     });
 
@@ -117,17 +172,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isMounted.current = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [clearAuthState, navigate]);
 
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       const data = await loginWithEmail(email, password);
       if (data?.user) {
+        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
         const role = await fetchUserRoleWithTimeout(data.user.id);
-        const currentUser: User = { id: data.user.id, email: data.user.email!, role };
+        const finalRole = role || cachedRole;
+
+        if (finalRole) {
+          localStorage.setItem('userRole', finalRole);
+        }
+
+        const currentUser: User = { id: data.user.id, email: data.user.email!, role: finalRole };
         setUser(currentUser);
-        setUserRole(role);
+        setUserRole(finalRole);
         return { data: { ...data, resolvedUser: currentUser }, error: null };
       }
       return { data, error: null };
@@ -140,15 +202,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = async () => {
-    setLoading(true);
     try {
       await logoutUser();
     } catch (err) {
+      // Even if signOut fails on the server, ALWAYS clean up locally
       console.error('Logout error:', err);
     } finally {
-      setUser(null);
-      setUserRole(null);
-      setLoading(false);
+      // ✅ Clear state + navigate regardless of server response
+      clearAuthState();
+      navigate('/login', { replace: true });
     }
   };
 

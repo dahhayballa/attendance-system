@@ -80,7 +80,7 @@ export const SupervisorAssignmentsPage = () => {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6" dir="rtl">
+            <div className="flex flex-col gap-6">
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">إدارة المشرفين</h2>

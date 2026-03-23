@@ -68,11 +68,11 @@ export const LiveDashboardPage = () => {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6" dir="rtl">
+            <div className="flex flex-col gap-6">
                 <div className="flex justify-between items-center bg-gray-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
                     <div className="relative z-10">
                         <h2 className="text-2xl font-bold flex items-center gap-2">
-                            <Activity className="text-red-400 animate-pulse" /> لوحة المراقبة الحية (Live)
+                            <Activity className="text-red-400 animate-pulse" /> لوحة المراقبة
                         </h2>
                         <p className="text-gray-400 mt-1">يتم تحديث البيانات والإشعارات فورياً دون الحاجة لتحديث الصفحة</p>
                     </div>

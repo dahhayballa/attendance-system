@@ -3,8 +3,10 @@ import SupervisorLayout from '../components/SupervisorLayout';
 import { SectionHeader } from '../components/ui/LayoutElements';
 import CurrentSessionCard from '../components/CurrentSessionCard';
 import { Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const SupervisorNowPage = () => {
+    const { t, i18n } = useTranslation();
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -12,20 +14,21 @@ export const SupervisorNowPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const timeStr = currentTime.toLocaleTimeString('ar-MR', { hour: '2-digit', minute: '2-digit' });
-    const dayName = new Intl.DateTimeFormat('ar-MR', { weekday: 'long' }).format(currentTime);
+    const langCode = i18n.language === 'fr' ? 'fr-FR' : 'ar-MR';
+    const timeStr = currentTime.toLocaleTimeString(langCode, { hour: '2-digit', minute: '2-digit' });
+    const dayName = new Intl.DateTimeFormat(langCode, { weekday: 'long' }).format(currentTime);
 
     return (
         <SupervisorLayout>
-            <div className="space-y-6" dir="rtl">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="space-y-6">
+                <div className="bg-blue-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div>
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <Clock size={24} />
-                                الحصص الجارية الآن
+                                {t('supervisor.nowPage.title')}
                             </h2>
-                            <p className="text-blue-100 mt-1">تقتصر القائمة على الجناح / الأقسام المخصصة لك فقط.</p>
+                            <p className="text-blue-100 mt-1">{t('supervisor.nowPage.description')}</p>
                         </div>
                         <div className="bg-white/20 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 text-center">
                             <p className="text-sm text-blue-100">{dayName}</p>
@@ -38,7 +41,10 @@ export const SupervisorNowPage = () => {
                 </div>
 
                 <div>
-                    <SectionHeader title="الحصص الحالية" subtitle="قم بتسجيل الحضور للأساتذة في قاعاتهم الآن" />
+                    <SectionHeader 
+                        title={t('supervisor.nowPage.sectionTitle')} 
+                        subtitle={t('supervisor.nowPage.sectionSubtitle')} 
+                    />
 
                     <div className="mt-4">
                         {/* 

@@ -45,7 +45,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center gap-3 p-1.5 pl-3 pr-2 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-gray-200/50 rounded-2xl border border-gray-100 transition-all duration-300 group ring-4 ring-transparent hover:ring-blue-50"
                 >
-                    <div className="flex flex-col items-end text-right">
+                    <div className="flex flex-col items-end text-end">
                         <span className="text-sm font-bold text-gray-900 leading-none mb-1">
                             {user?.email?.split('@')[0]}
                         </span>
@@ -54,7 +54,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                         </span>
                     </div>
                     
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-inner transform group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-blue-300 rounded-full flex items-center justify-center text-white shadow-inner transform group-hover:scale-110 transition-transform duration-300">
                         <User size={20} />
                     </div>
                     
@@ -66,7 +66,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                    <div className="absolute top-full mt-3 right-0 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                    <div className="absolute top-full mt-3 end-0 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 animate-in fade-in zoom-in-95 duration-200 overflow-hidden z-50">
                         <div className="px-4 py-3 border-b border-gray-50 mb-3 bg-gray-50/30">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{t('common.userAccount') || 'Compte Utilisateur'}</p>
                             <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
@@ -78,7 +78,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                                     <Globe size={18} className="text-blue-500" />
                                     {t('common.language') || 'Langue'}
                                 </span>
-                                <div className="scale-90 origin-right">
+                                <div className="scale-90 origin-end">
                                     <LanguageSwitcher />
                                 </div>
                             </div>

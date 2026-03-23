@@ -47,6 +47,7 @@ const resources = {
         },
         sidebar: {
           home: 'الرئيسية',
+          now: 'الآن',
           attendance: 'إدارة الغياب',
           attendanceRecord: 'تسجيل الحضور',
           attendanceRecords: 'سجلات الحضور',
@@ -58,6 +59,12 @@ const resources = {
           settings: 'الإعدادات',
           footerTitle: 'نظام الرقابة المتقدم',
           footerVersion: 'الإصدار 1.0',
+        },
+        nowPage: {
+          title: 'الحصص الجارية الآن',
+          description: 'تقتصر القائمة على الجناح / الأقسام المخصصة لك فقط.',
+          sectionTitle: 'الحصص الحالية',
+          sectionSubtitle: 'قم بتسجيل الحضور للأساتذة في قاعاتهم الآن',
         },
         statisticsPage: {
           title: 'الإحصائيات',
@@ -182,6 +189,12 @@ const resources = {
         logoutError: 'حدث خطأ أثناء تسجيل الخروج',
       },
       admin: {
+        sidebar: {
+          dashboard: 'لوحة التحكم',
+          liveDashboard: 'لوحة التحكم المباشرة',
+          supervisors: 'المشرفون',
+          reports: 'التقارير',
+        },
         dashboard: {
           title: 'لوحة تحكم المدير',
           subtitle: 'نظرة عامة على إحصائيات الحضور الأسبوعية',
@@ -256,6 +269,7 @@ const resources = {
         },
         sidebar: {
           home: 'Accueil',
+          now: 'Maintenant',
           attendance: 'Gestion des absences',
           attendanceRecord: 'Enregistrer la présence',
           attendanceRecords: 'Historique des présences',
@@ -267,6 +281,12 @@ const resources = {
           settings: 'Paramètres',
           footerTitle: 'Système avancé de contrôle',
           footerVersion: 'Version 1.0',
+        },
+        nowPage: {
+          title: 'Séances en cours',
+          description: "La liste est limitée à l'aile/aux classes qui vous sont assignées.",
+          sectionTitle: 'Séances actuelles',
+          sectionSubtitle: 'Enregistrez la présence des enseignants dans leurs salles de classe maintenant',
         },
         statisticsPage: {
           title: 'Statistiques',
@@ -391,6 +411,12 @@ const resources = {
         logoutError: 'Erreur lors de la déconnexion',
       },
       admin: {
+        sidebar: {
+          dashboard: 'Tableau de bord',
+          liveDashboard: 'En Direct',
+          supervisors: 'Superviseurs',
+          reports: 'Rapports',
+        },
         dashboard: {
           title: 'Tableau de bord administrateur',
           subtitle: 'Vue d\'ensemble des statistiques hebdomadaires de présence',
@@ -423,7 +449,6 @@ const resources = {
   },
 } as const;
 
-const rtlLanguages = ['ar'];
 
 i18n
   .use(LanguageDetector)
@@ -444,7 +469,8 @@ i18n
 
 const updateDocumentDirection = (lng: string) => {
   if (typeof document === 'undefined') return;
-  const dir = rtlLanguages.includes(lng) ? 'rtl' : 'ltr';
+  const isRtl = lng && lng.startsWith('ar');
+  const dir = isRtl ? 'rtl' : 'ltr';
   document.documentElement.dir = dir;
   document.documentElement.lang = lng;
 };

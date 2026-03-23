@@ -47,7 +47,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-8" dir="rtl">
+      <div className="space-y-8">
         {/* Header & Stats */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-800">لوحة تحكم المسؤول</h1>

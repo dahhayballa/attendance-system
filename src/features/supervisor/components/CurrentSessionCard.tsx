@@ -153,7 +153,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
 // ══ Helpers ══
 const LoadingState = ({ className }: { className: string }) => (
     <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
-        <div className="bg-gradient-to-l from-blue-600 to-indigo-700 p-4"><div className="h-5 bg-white/20 rounded w-48 animate-pulse" /></div>
+        <div className="bg-blue-300 p-4"><div className="h-5 bg-white/20 rounded w-48 animate-pulse" /></div>
         <div className="p-5 space-y-4">
             {[1, 2, 3, 4].map(i => <div key={i} className="flex items-center gap-3"><div className="w-5 h-5 bg-gray-200 rounded animate-pulse" /><div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" /></div>)}
             <div className="h-3 bg-gray-200 rounded-full w-full animate-pulse mt-4" />

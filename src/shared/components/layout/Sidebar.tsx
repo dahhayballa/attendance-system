@@ -33,7 +33,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const location = useLocation();
     const [expandedMenus, setExpandedMenus] = useState<string[]>(['attendance']);
 
-    const isRTL = i18n.language === 'ar';
+    const isRTL = i18n.language && i18n.language.startsWith('ar');
 
     const toggleMenu = (id: string) => {
         setExpandedMenus(prev => 
@@ -42,15 +42,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     };
 
     const adminItems = [
-        { id: 'admin-dashboard', label: 'Admin Dashboard', icon: LayoutDashboard, path: '/admin' },
-        { id: 'live-dashboard', label: 'Live Dashboard', icon: Activity, path: '/admin/live' },
-        { id: 'supervisors', label: 'Supervisors', icon: Shield, path: '/admin/supervisors' },
-        { id: 'admin-reports', label: 'Reports', icon: FileText, path: '/admin/reports' },
+        { id: 'admin-dashboard', label: t('admin.sidebar.dashboard'), icon: LayoutDashboard, path: '/admin' },
+        { id: 'live-dashboard', label: t('admin.sidebar.liveDashboard'), icon: Activity, path: '/admin/live' },
+        { id: 'supervisors', label: t('admin.sidebar.supervisors'), icon: Shield, path: '/admin/supervisors' },
+        { id: 'admin-reports', label: t('admin.sidebar.reports'), icon: FileText, path: '/admin/reports' },
     ];
 
     const supervisorItems = [
         { id: 'dashboard', label: t('supervisor.sidebar.home'), icon: Home, path: '/supervisor' },
-        { id: 'now', label: 'الآن', icon: Clock, path: '/supervisor/now' },
+        { id: 'now', label: t('supervisor.sidebar.now'), icon: Clock, path: '/supervisor/now' },
         { 
             id: 'attendance',
             label: t('supervisor.sidebar.attendance'), 
@@ -142,11 +142,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                         className={({ isActive }) => `
                                             group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300
                                             ${isActive 
-                                                ? 'bg-blue-600 text-white shadow-xl shadow-blue-200 scale-[1.02] z-10' 
+                                                ? 'bg-blue-50/80 text-blue-700 font-bold' 
                                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}
                                         `}
                                     >
-                                        <item.icon size={20} className={`shrink-0 transition-transform duration-300 ${isMainActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                        <item.icon size={20} className={`shrink-0 transition-transform duration-300 ${isMainActive ? 'text-blue-600 scale-110' : 'text-gray-400 group-hover:scale-110 group-hover:text-blue-500'}`} />
                                         <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'} text-sm font-semibold`}>{item.label}</span>
                                         {!isRTL && <ChevronRight size={14} className={`opacity-0 group-hover:opacity-40 transition-all transform translate-x-2 group-hover:translate-x-0`} />}
                                     </NavLink>

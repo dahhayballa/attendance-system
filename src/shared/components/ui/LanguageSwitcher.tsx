@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 const LANGUAGES = [
     { code: 'ar', label: 'العربية' },
     { code: 'fr', label: 'Français' },
-    { code: 'en', label: 'English' },
 ] as const;
 
 const LanguageSwitcher = () => {

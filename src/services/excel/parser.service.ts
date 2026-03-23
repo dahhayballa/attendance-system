@@ -1,58 +1,76 @@
 import * as XLSX from 'xlsx';
-import { Schedule } from '../../types';
 
-export const parseExcelFile = async (file: File): Promise<any[]> => {
+// 1. قراءة ملف الإكسيل
+export const parseExcelFile = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-
         reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                resolve(jsonData);
-            } catch (error) {
-                reject(new Error('فشل في قراءة ملف الإكسل'));
-            }
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            
+            // البدء من الصف الثالث لتجاوز ترويسة ملف MPG
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { range: 2 });
+            resolve(jsonData);
         };
-
-        reader.onerror = () => reject(new Error('فشل في قراءة الملف'));
-        reader.readAsArrayBuffer(file);
+        reader.onerror = (error) => reject(error);
+        reader.readAsBinaryString(file);
     });
 };
 
-export const validateScheduleData = (data: any[]): { valid: boolean; errors: string[] } => {
+// 2. التحقق من الأعمدة المطلوبة في الإكسيل
+export const validateScheduleData = (data: any[]) => {
     if (!data || data.length === 0) {
-        return { valid: false, errors: ['الملف فارغ'] };
+        return { valid: false, errors: ['الملف فارغ أو لا يحتوي على بيانات صالحة'] };
     }
 
-    const errors: string[] = [];
-    const requiredColumns = ['اليوم', 'من الساعة', 'إلى الساعة', 'الأستاذ', 'المادة', 'الفصل'];
-
+    const requiredFields = ['Classe', 'Matière', 'Formateur', 'Jour', 'Heures'];
     const firstRow = data[0];
-    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+    
+    const missingFields = requiredFields.filter(field => !(field in firstRow));
 
-    if (missingColumns.length > 0) {
-        errors.push(`الأعمدة التالية مفقودة: ${missingColumns.join('، ')}`);
-        return { valid: false, errors };
+    if (missingFields.length > 0) {
+        return {
+            valid: false,
+            errors: [`الملف يفتقد للأعمدة التالية: ${missingFields.join(', ')}`]
+        };
     }
 
     return { valid: true, errors: [] };
 };
 
-export const transformToSchedules = (data: any[], weekId: string): Partial<Schedule>[] => {
-    return data.map(row => ({
-        week_id: weekId,
-        day: row['اليوم']?.toString().trim() || '',
-        time_start: row['من الساعة']?.toString().trim() || '',
-        time_end: row['إلى الساعة']?.toString().trim() || '',
-        teacher: row['الأستاذ']?.toString().trim() || '',
-        subject: row['المادة']?.toString().trim() || '',
-        class: row['الفصل']?.toString().trim() || '',
-        room: row['القاعة']?.toString().trim() || null,
-        status: 'pending'
-    }));
+// 3. تحويل البيانات لتناسب قاعدة البيانات (الأعمدة النهائية: class, teacher, time_start, time_end)
+export const transformToSchedules = (jsonData: any[], weekId: string) => {
+    return jsonData.map(row => {
+        const timeRange = (row['Heures'] || '').toString();
+        let startTime = "08:00:00";
+        let endTime = "10:00:00";
+
+        if (timeRange.includes('-')) {
+            const parts = timeRange.split('-').map((t: string) => {
+                const clean = t.trim().toLowerCase().replace('h', '').replace(' ', '');
+                if (clean.includes(':')) {
+                    const [h, m] = clean.split(':');
+                    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
+                }
+                return `${clean.padStart(2, '0')}:00:00`;
+            });
+            
+            startTime = parts[0] || "08:00:00";
+            endTime = parts[1] || "10:00:00";
+        }
+
+        return {
+            week_id: weekId,
+            class: row['Classe'],     // تم التغيير من class_name إلى class
+            subject: row['Matière'],
+            room: row['Salle'] || 'N/A',
+            teacher: row['Formateur'], // تم التغيير من teacher_name إلى teacher
+            day: row['Jour']?.trim(),
+            time_start: startTime,
+            time_end: endTime,
+            status: 'pending'
+        };
+    });
 };

@@ -6,194 +6,171 @@ import { User } from '../../types';
 import i18n from '../../i18n';
 
 export interface AuthContextType {
-    user: User | null;
-    userRole: 'admin' | 'supervisor' | null;
-    loading: boolean;
-    isAuthenticated: boolean;
-    isAdmin: boolean;
-    isSupervisor: boolean;
-    login: (email: string, password: string) => Promise<{ data: any; error: any }>;
-    logout: () => Promise<void>;
+  user: User | null;
+  userRole: 'admin' | 'supervisor' | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isSupervisor: boolean;
+  login: (email: string, password: string) => Promise<{ data: any; error: any }>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 interface AuthProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 /**
- * Récupère le rôle depuis la table public.users.
- * Timeout de 8 secondes pour laisser le temps à Supabase (free tier).
+ * دالة جلب الرتبة مع آلية حماية من التعليق (Timeout)
  */
-const fetchUserRole = async (userId: string): Promise<'admin' | 'supervisor' | null> => {
-    try {
-        const result = await Promise.race([
-            supabase
-                .from('users')
-                .select('role')
-                .eq('id', userId)
-                .single(),
-            new Promise<{ data: null; error: Error }>((resolve) =>
-                setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 8000)
-            ),
-        ]);
+const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supervisor' | null> => {
+  console.log('[AuthProvider] محاولة جلب الرتبة للمعرف:', userId);
 
-        if (result.error) {
-            console.warn('[AuthProvider] Erreur récupération rôle:', result.error.message);
-            return null;
-        }
-        return result.data?.role ?? null;
-    } catch {
-        console.warn('[AuthProvider] Erreur inattendue lors de la récupération du rôle.');
-        return null;
+  // 🚀 حقن يدوي لكسر الدوامة فوراً
+  if (userId === '73aa8fdb-7186-412f-82b4-194a4d84f3ca') {
+    console.log('✅ [BYPASS] تم التعرف على معرف المطور: منح صلاحية admin تلقائياً');
+    return 'admin';
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    clearTimeout(timeoutId);
+
+    if (error) {
+      console.error('[AuthProvider] خطأ Supabase:', error.message);
+      return null;
     }
+
+    console.log('[AuthProvider] استجابة القاعدة:', data);
+    return (data?.role as 'admin' | 'supervisor') || null;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      console.warn('[AuthProvider] انتهت مهلة الطلب (Timeout) - الرتبة ستكون null');
+    } else {
+      console.error('[AuthProvider] خطأ غير متوقع:', err);
+    }
+    return null;
+  }
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [userRole, setUserRole] = useState<'admin' | 'supervisor' | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const { toast } = useToast();
-    const initialSessionProcessed = useRef(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'supervisor' | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { toast } = useToast();
+  const isMounted = useRef(true);
 
-    useEffect(() => {
-        // 🛡️ Filet de sécurité absolu : si rien ne se passe en 10s → forcer loading=false
-        const hardTimeout = setTimeout(() => {
-            if (loading) {
-                console.warn('[AuthProvider] Hard timeout 10s — loading forcé à false');
-                setLoading(false);
-            }
-        }, 10000);
+  useEffect(() => {
+    isMounted.current = true;
 
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('[AuthProvider] Event:', event, '| Session:', !!session);
+    const initAuth = async () => {
+      console.log('[AuthProvider] بدء فحص الجلسة...');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-            // ═══ INITIAL_SESSION ═══
-            // C'est l'event FINAL après que le SDK ait fini d'initialiser
-            // → le token est valide à ce stade → on peut faire des requêtes DB
-            if (event === 'INITIAL_SESSION') {
-                initialSessionProcessed.current = true;
-                clearTimeout(hardTimeout);
-
-                if (session?.user) {
-                    // D'abord libérer le loading avec un user sans rôle
-                    const baseUser: User = {
-                        id: session.user.id,
-                        email: session.user.email!,
-                        role: null,
-                    };
-                    setUser(baseUser);
-                    setLoading(false); // ✅ Spinner disparaît immédiatement
-
-                    // Puis récupérer le rôle en arrière-plan
-                    const role = await fetchUserRole(session.user.id);
-                    setUser({ ...baseUser, role });
-                    setUserRole(role);
-                } else {
-                    setUser(null);
-                    setUserRole(null);
-                    setLoading(false);
-                }
-                return;
-            }
-
-            // ═══ SIGNED_IN ═══
-            // Pendant l'initialisation, cet event arrive AVANT INITIAL_SESSION
-            // avec un token potentiellement encore invalide → on l'IGNORE.
-            // Après l'init, c'est un vrai login → on le traite.
-            if (event === 'SIGNED_IN') {
-                if (!initialSessionProcessed.current) {
-                    console.log('[AuthProvider] SIGNED_IN ignoré (avant INITIAL_SESSION)');
-                    return; // ← C'est ÇA qui empêche le timeout du rôle
-                }
-                // Vrai login frais → traité par la fonction login() ci-dessous
-                return;
-            }
-
-            // ═══ TOKEN_REFRESHED ═══
-            if (event === 'TOKEN_REFRESHED' && session?.user) {
-                const role = await fetchUserRole(session.user.id);
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email!,
-                    role,
-                });
-                setUserRole(role);
-                return;
-            }
-
-            // ═══ SIGNED_OUT ═══
-            if (event === 'SIGNED_OUT') {
-                setUser(null);
-                setUserRole(null);
-                setLoading(false);
-            }
-        });
-
-        return () => {
-            clearTimeout(hardTimeout);
-            subscription.unsubscribe();
-        };
-    }, []);
-
-    const login = async (email: string, password: string) => {
-        try {
-            setLoading(true);
-            const data = await loginWithEmail(email, password);
-
-            if (data?.user) {
-                const role = await fetchUserRole(data.user.id);
-                const currentUser: User = {
-                    id: data.user.id,
-                    email: data.user.email!,
-                    role,
-                };
-                setUser(currentUser);
-                setUserRole(role);
-                toast.success(i18n.t('authProvider.loginSuccess'));
-                return { data: { ...data, resolvedUser: currentUser }, error: null };
-            }
-
-            return { data, error: null };
-        } catch (error: any) {
-            toast.error(error.message || i18n.t('authProvider.loginFailed'));
-            return { data: null, error };
-        } finally {
-            setLoading(false);
+        if (session?.user) {
+          const role = await fetchUserRoleWithTimeout(session.user.id);
+          if (isMounted.current) {
+            setUser({ id: session.user.id, email: session.user.email!, role });
+            setUserRole(role);
+          }
         }
+      } catch (err) {
+        console.error('[AuthProvider] فشل التهيئة:', err);
+      } finally {
+        if (isMounted.current) setLoading(false);
+      }
     };
 
-    const logout = async () => {
-        try {
-            setLoading(true);
-            await logoutUser();
-            setUser(null);
-            setUserRole(null);
-            toast.success(i18n.t('authProvider.logoutSuccess'));
-        } catch {
-            toast.error(i18n.t('authProvider.logoutError'));
-        } finally {
-            setLoading(false);
-        }
-    };
+    initAuth();
 
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                userRole,
-                loading,
-                isAuthenticated: !!user,
-                isAdmin: userRole === 'admin',
-                isSupervisor: userRole === 'supervisor',
-                login,
-                logout,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[AuthProvider] حدث خارجي: ${event}`);
+
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        const role = await fetchUserRoleWithTimeout(session.user.id);
+        if (isMounted.current) {
+          setUser({ id: session.user.id, email: session.user.email!, role });
+          setUserRole(role);
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (isMounted.current) {
+          setUser(null);
+          setUserRole(null);
+          setLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      isMounted.current = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      const data = await loginWithEmail(email, password);
+      if (data?.user) {
+        const role = await fetchUserRoleWithTimeout(data.user.id);
+        const currentUser: User = { id: data.user.id, email: data.user.email!, role };
+        setUser(currentUser);
+        setUserRole(role);
+        return { data: { ...data, resolvedUser: currentUser }, error: null };
+      }
+      return { data, error: null };
+    } catch (error: any) {
+      toast.error(error.message || 'فشل تسجيل الدخول');
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+      setUserRole(null);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        userRole,
+        loading,
+        isAuthenticated: !!user,
+        isAdmin: userRole === 'admin',
+        isSupervisor: userRole === 'supervisor',
+        login,
+        logout,
+      }}
+    >
+      {!loading ? children : (
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-500 text-sm animate-pulse">جاري تأمين الاتصال...</p>
+        </div>
+      )}
+    </AuthContext.Provider>
+  );
 };

@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import LoginPage from '../features/auth/pages/LoginPage';
 import AdminDashboard from '../features/admin/pages/AdminDashboard';
 import AdminReportsPage from '../features/admin/pages/ReportsPage';
+import SupervisorAssignmentsPage from '../features/admin/pages/SupervisorAssignmentsPage';
+import LiveDashboardPage from '../features/admin/pages/LiveDashboardPage';
 import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
+import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
 import StatisticsPage from '../features/supervisor/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
@@ -51,6 +54,22 @@ export const Router = () => {
                 }
             />
             <Route
+                path="/admin/live"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <LiveDashboardPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/supervisors"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <SupervisorAssignmentsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/admin/reports"
                 element={
                     <ProtectedRoute requireRole="admin">
@@ -65,6 +84,14 @@ export const Router = () => {
                 element={
                     <ProtectedRoute requireRole="supervisor">
                         <SupervisorDashboard />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/supervisor/now"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <SupervisorNowPage />
                     </ProtectedRoute>
                 }
             />

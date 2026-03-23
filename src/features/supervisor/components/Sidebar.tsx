@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Home, BarChart3, FileText, Settings, ChevronRight, ClipboardList,
-    CheckSquare, List, Users, CalendarDays, UserMinus, ChevronDown
+    CheckSquare, List, Users, CalendarDays, UserMinus, ChevronDown, Clock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,6 +19,7 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
 
     const navItems = [
         { id: 'dashboard', label: t('supervisor.sidebar.home'), icon: Home, path: '/supervisor' },
+        { id: 'now', label: 'الآن', icon: Clock, path: '/supervisor/now' },
         {
             id: 'attendance', label: t('supervisor.sidebar.attendance'), icon: ClipboardList, path: '/supervisor/attendance',
             subItems: [

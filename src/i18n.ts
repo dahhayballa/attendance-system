@@ -19,7 +19,7 @@ const resources = {
         emailPlaceholder: 'admin@example.com',
         passwordLabel: 'كلمة المرور',
         passwordPlaceholder: '••••••••',
-        loginButton: 'دخول',
+        loginButton: 'تسجيل الدخول ',
         loginFailed: 'فشل تسجيل الدخول. يرجى التحقق من بياناتك.',
         unexpectedError: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
       },

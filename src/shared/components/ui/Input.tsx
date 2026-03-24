@@ -29,7 +29,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
             )}
             <div className="relative flex items-center">
                 {rightIcon && (
-                    <span className="absolute right-3 text-gray-400 flex items-center justify-center">
+                    <span className="absolute ltr:right-3 rtl:left-3 text-gray-400 flex items-center justify-center">
                         {rightIcon}
                     </span>
                 )}
@@ -42,14 +42,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
             focus:ring-2 focus:ring-blue-500 focus:border-transparent
             disabled:bg-gray-100 disabled:cursor-not-allowed
             ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}
-            ${rightIcon ? 'pr-10' : ''}
-            ${leftIcon ? 'pl-10' : ''}
+            ${rightIcon ? 'ltr:pr-10 rtl:pl-10' : ''}
+            ${leftIcon ? 'ltr:pl-10 rtl:pr-10' : ''}
             ${className}
           `}
                     {...props}
                 />
                 {leftIcon && (
-                    <span className="absolute left-3 text-gray-400 flex items-center justify-center">
+                    <span className="absolute ltr:left-3 rtl:right-3 text-gray-400 flex items-center justify-center">
                         {leftIcon}
                     </span>
                 )}

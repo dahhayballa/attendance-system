@@ -17,6 +17,7 @@ export const LoginPage = () => {
     const [errors, setErrors] = useState<{ email?: string | null; password?: string | null }>({});
     const [authError, setAuthError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isFocused, setIsFocused] = useState<boolean>(false);
 
     const { login } = useAuth();
     const { t } = useTranslation();
@@ -70,39 +71,42 @@ export const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-orange-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23f97316\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="flex justify-center mb-8 relative">
-                    {/* Decorative elegant background circle */}
-                    <div className="absolute inset-0 flex items-center justify-center -z-10">
-                        <div className="w-32 h-32 bg-orange-500/10 rounded-full blur-xl animate-pulse"></div>
+        <div className={`min-h-[100dvh] bg-orange-50 flex flex-col ${isFocused ? 'justify-start pt-6 pb-32' : 'justify-center py-8'} px-4 sm:py-12 sm:px-6 lg:px-8 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23f97316\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] overflow-y-auto transition-all duration-500`}>
+            <div className="mt-2 sm:mt-8 sm:mx-auto w-full sm:max-w-md">
+                <Card className="shadow-xl border-0 ring-1 ring-gray-900/5 rounded-2xl sm:rounded-2xl" padding="p-6 sm:p-8" >
+                    <div className="flex justify-end ltr:justify-start mb-2">
+                        <LanguageSwitcher />
                     </div>
-                    {/* Professional logo container */}
-                    <div className="w-32 h-32 bg-white/90 backdrop-blur-md rounded-[2rem] border border-gray-100 flex items-center justify-center shadow-xl shadow-orange-500/10 transform hover:-translate-y-1 transition-all duration-500 p-2 overflow-hidden">
-                        <img 
-                            src="/logo-mpg.png" 
-                            alt="M.P.G - École d'Enseignement Technique Supérieur" 
-                            className="w-full h-full object-contain filter drop-shadow hover:drop-shadow-md transition-all duration-300 mix-blend-multiply" 
-                        />
+                    <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                        <div className={`flex justify-center relative transition-all duration-500 ${isFocused ? 'mb-2 sm:mb-6' : 'mb-4 sm:mb-6'}`}>
+                            {/* Decorative elegant background circle */}
+                            <div className="absolute inset-0 flex items-center justify-center -z-10">
+                                <div className={`rounded-full blur-xl animate-pulse transition-all duration-500 ${isFocused ? 'w-16 h-16 sm:w-32 sm:h-32' : 'w-24 h-24 sm:w-32 sm:h-32'}`}></div>
+                            </div>
+                            {/* Professional logo container */}
+                            <div className={`bg-white/90 backdrop-blur-md rounded-2xl sm:rounded-[2rem] flex items-center justify-center p-2 overflow-hidden transition-all duration-500 ${isFocused ? 'w-20 h-20 sm:w-48 sm:h-48' : 'w-28 h-28 sm:w-48 sm:h-48'}`}>
+                                <img
+                                    src="/logo-mpg.png"
+                                    alt="M.P.G - École d'Enseignement Technique Supérieur"
+                                    className="w-full h-full object-contain filter drop-shadow hover:drop-shadow-md mix-blend-multiply"
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-                    {t('auth.loginTitle')}
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    {t('auth.loginSubtitle')}
-                </p>
-            </div>
-
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <Card className="shadow-xl border-0 ring-1 ring-gray-900/5 sm:rounded-2xl" padding="p-8">
-                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+                    <form 
+                        className="space-y-4 sm:space-y-6" 
+                        onSubmit={handleSubmit} 
+                        noValidate
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={(e) => {
+                            // Clicks outside inputs (such as closing keyboard)
+                            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                setIsFocused(false);
+                            }
+                        }}
+                    >
 
                         {authError && <ErrorMessage message={authError} />}
-
-                        <div className="flex justify-end mb-2">
-                            <LanguageSwitcher />
-                        </div>
 
                         <Input
                             id="email"
@@ -151,7 +155,7 @@ export const LoginPage = () => {
                             variant="primary"
                             fullWidth
                             loading={isLoading}
-                            className="py-3 shadow-md hover:shadow-lg mt-8 text-lg"
+                            className="py-3 shadow-md hover:shadow-lg mt-6 sm:mt-8 text-lg"
                         >
                             {t('auth.loginButton')}
                         </Button>

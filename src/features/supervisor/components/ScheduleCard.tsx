@@ -19,21 +19,21 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
     return (
         <Card
             hover={isPending}
-            className={`border-l-4 overflow-hidden relative ${isPending ? 'border-l-blue-500 shadow-sm'
+            className={`border-l-4 overflow-hidden relative ${isPending ? 'border-l-orange-500 shadow-sm'
                 : schedule.status === 'present' ? 'border-l-green-500 bg-gray-50/50 opacity-90'
                     : 'border-l-red-500 bg-gray-50/50 opacity-90'
                 }`}
             padding="p-0"
         >
-            <div className="p-5">
+            <div className="p-5" dir="ltr">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-100">
+                    <div className="flex items-center gap-2 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg border border-orange-100">
                         <Calendar className="h-4 w-4" />
-                        <span className="text-sm font-bold" dir="ltr">{schedule.day}</span>
+                        <span className="text-sm font-bold">{schedule.day}</span>
                     </div>
                     <div>
                         <Badge variant={schedule.status}>
-                            {isPending ? 'بانتظار التسجيل' : schedule.status === 'present' ? 'حاضر' : 'غائب'}
+                            {isPending ? 'En attente' : schedule.status === 'present' ? 'Présent' : 'Absent'}
                         </Badge>
                     </div>
                 </div>
@@ -43,8 +43,8 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                         <Clock className="h-6 w-6 text-gray-600" />
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 mb-0.5 font-medium">الوقت</p>
-                        <div className="flex items-center gap-1.5 font-mono text-gray-900 font-bold" dir="ltr">
+                        <p className="text-xs text-gray-500 mb-0.5 font-medium">Heure</p>
+                        <div className="flex items-center gap-1.5 font-mono text-gray-900 font-bold">
                             {schedule.time_start} - {schedule.time_end}
                         </div>
                     </div>
@@ -54,7 +54,7 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                     <div className="flex items-center gap-3">
                         <User className="h-5 w-5 text-gray-400 shrink-0" />
                         <div>
-                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">الأستاذ</p>
+                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">Professeur</p>
                             <p className="font-bold text-gray-900 text-base leading-tight">{schedule.teacher}</p>
                         </div>
                     </div>
@@ -62,7 +62,7 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                     <div className="flex items-center gap-3">
                         <BookOpen className="h-5 w-5 text-gray-400 shrink-0" />
                         <div>
-                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">المادة</p>
+                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">Matière</p>
                             <p className="font-medium text-gray-800 text-sm leading-tight">{schedule.subject}</p>
                         </div>
                     </div>
@@ -70,7 +70,7 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                     <div className="flex items-center gap-3">
                         <Building className="h-5 w-5 text-gray-400 shrink-0" />
                         <div>
-                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">الفصل</p>
+                            <p className="text-xs text-gray-500 font-medium leading-none mb-1">Classe</p>
                             <p className="font-medium text-gray-800 text-sm leading-tight">{schedule.class}</p>
                         </div>
                     </div>
@@ -79,7 +79,7 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                         <div className="flex items-center gap-3">
                             <MapPin className="h-5 w-5 text-gray-400 shrink-0" />
                             <div>
-                                <p className="text-xs text-gray-500 font-medium leading-none mb-1">القاعة</p>
+                                <p className="text-xs text-gray-500 font-medium leading-none mb-1">Salle</p>
                                 <p className="font-medium text-gray-800 text-sm leading-tight">{schedule.room}</p>
                             </div>
                         </div>
@@ -91,7 +91,7 @@ export const ScheduleCard = memo(({ schedule, onMark, loadingId }: ScheduleCardP
                         <div className="flex justify-between items-center text-xs text-gray-500">
                             <div className="flex items-center gap-1.5">
                                 <User className="h-3.5 w-3.5" />
-                                <span>سجلها: {schedule.recorded_by_user.email?.split('@')[0]}</span>
+                                <span>Saisi par : {schedule.recorded_by_user.email?.split('@')[0]}</span>
                             </div>
                             <span>{formatTime(schedule.recorded_at)}</span>
                         </div>

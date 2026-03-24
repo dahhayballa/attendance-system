@@ -27,14 +27,14 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
             setRecording(scheduleId);
             await recordAttendance(scheduleId, status, user.id, extraNotes);
             toast.success(
-                status === 'present' ? '✅ تم تسجيل الحضور' :
-                status === 'absent'  ? '❌ تم تسجيل الغياب' :
-                status === 'late'    ? '⏰ تم تسجيل التأخر' : '📝 تم تسجيل الملاحظة'
+                status === 'present' ? '✅ Présence enregistrée' :
+                status === 'absent'  ? '❌ Absence enregistrée' :
+                status === 'late'    ? '⏰ Retard enregistré' : '📝 Motif enregistré'
             );
             onAttendanceRecorded?.();
             refetch();
         } catch (err: any) {
-            toast.error(err.message || 'فشل في التسجيل');
+            toast.error(err.message || 'Échec de l\'enregistrement');
         } finally {
             setRecording(null);
             closeModal();
@@ -50,7 +50,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
         const { type, scheduleId, value } = modalState;
         if (!scheduleId) return;
         if (type === 'absent') handleRecord(scheduleId, 'absent', value || undefined);
-        if (type === 'late')   handleRecord(scheduleId, 'late', `تأخر ${value} دقيقة`);
+        if (type === 'late')   handleRecord(scheduleId, 'late', `Retard ${value} minutes`);
         if (type === 'notes' && value.trim()) handleRecord(scheduleId, 'excused', value);
     };
 
@@ -60,15 +60,15 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
 
     return (
         <>
-            <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="rtl">
+            <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="ltr">
 
                 {/* ── Header ── */}
-                <div className="bg-green-700 px-5 py-4 flex items-center justify-between">
+                <div className="bg-slate-800 px-5 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-white">
-                        <Clock size={18} className="animate-pulse" />
-                        <span className="font-bold text-base">الحصة الحالية</span>
+                        <Clock size={18} className="animate-pulse text-orange-500" />
+                        <span className="font-bold text-base">Session en Cours</span>
                     </div>
-                    <span className="text-white/90 text-sm font-mono bg-white/10 px-3 py-1 rounded-lg" dir="ltr">
+                    <span className="text-white/90 text-sm font-mono bg-white/10 px-3 py-1 rounded-lg">
                         {fmt(currentSession.time_start)} — {fmt(currentSession.time_end)}
                     </span>
                 </div>
@@ -77,7 +77,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                 {hasMultipleTeachers && (
                     <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-amber-700 text-xs font-medium">
                         <AlertTriangle size={14} />
-                        <span>{allCurrentSessions.length} أساتذة في نفس الفترة الزمنية</span>
+                        <span>{allCurrentSessions.length} professeurs dans ce créneau</span>
                     </div>
                 )}
 
@@ -85,12 +85,12 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                     {/* ── Session info ── */}
                     <div className="bg-gray-50 rounded-xl border border-gray-100 mb-5 overflow-hidden">
                         {[
-                            { icon: <Building size={15} />,  label: 'القسم',   value: currentSession.class },
-                            { icon: <BookOpen size={15} />,  label: 'المادة',  value: currentSession.subject },
-                            { icon: <User size={15} />,      label: 'الأستاذ', value: currentSession.teacher, bold: true },
-                            { icon: <MapPin size={15} />,    label: 'القاعة',  value: currentSession.room || '—' },
-                            { icon: <Clock size={15} />,     label: 'متبقي',
-                              value: `${timeRemaining} دقيقة`,
+                            { icon: <Building size={15} />,  label: 'Classe',   value: currentSession.class },
+                            { icon: <BookOpen size={15} />,  label: 'Matière',  value: currentSession.subject },
+                            { icon: <User size={15} />,      label: 'Professeur', value: currentSession.teacher, bold: true },
+                            { icon: <MapPin size={15} />,    label: 'Salle',  value: currentSession.room || '—' },
+                            { icon: <Clock size={15} />,     label: 'Restant',
+                              value: `${timeRemaining} min`,
                               color: timeRemaining <= 10 ? 'text-red-600' : timeRemaining <= 20 ? 'text-amber-600' : 'text-green-600'
                             },
                         ].map(({ icon, label, value, bold, color }, i) => (
@@ -108,14 +108,14 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
 
                     {/* ── Progress bar ── */}
                     <div className="mb-5">
-                        <div className="flex justify-between text-xs text-gray-400 mb-1.5" dir="ltr">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1.5">
                             <span>{fmt(currentSession.time_start)}</span>
                             <span className="font-semibold text-gray-600">{progress}%</span>
                             <span>{fmt(currentSession.time_end)}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div
-                                className="h-full rounded-full bg-green-500 transition-all duration-1000"
+                                className="h-full rounded-full bg-orange-500 transition-all duration-1000"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
@@ -124,10 +124,10 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                     {/* ── Action buttons ── */}
                     <div className="grid grid-cols-4 gap-2">
                         {[
-                            { label: 'حاضر',   status: 'present', icon: <CheckCircle size={16} />,  cls: 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200', onClick: () => handlePresent(currentSession.id) },
-                            { label: 'غائب',   status: 'absent',  icon: <XCircle size={16} />,      cls: 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200',       onClick: () => openModal('absent', currentSession.id) },
-                            { label: 'متأخر',  status: 'late',    icon: <AlertTriangle size={16} />, cls: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200', onClick: () => openModal('late', currentSession.id) },
-                            { label: 'ملاحظة', status: 'excused', icon: <FileText size={16} />,     cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200',   onClick: () => openModal('notes', currentSession.id) },
+                            { label: 'Présent',   status: 'present', icon: <CheckCircle size={16} />,  cls: 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200', onClick: () => handlePresent(currentSession.id) },
+                            { label: 'Absent',   status: 'absent',  icon: <XCircle size={16} />,      cls: 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200',       onClick: () => openModal('absent', currentSession.id) },
+                            { label: 'Retard',  status: 'late',    icon: <AlertTriangle size={16} />, cls: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200', onClick: () => openModal('late', currentSession.id) },
+                            { label: 'Motif', status: 'excused', icon: <FileText size={16} />,     cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200',   onClick: () => openModal('notes', currentSession.id) },
                         ].map(({ label, status, icon, cls, onClick }) => (
                             <button
                                 key={status}
@@ -146,7 +146,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                 {hasMultipleTeachers && (
                     <div className="border-t border-gray-100 px-5 py-4">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                            أساتذة آخرون في نفس الفترة
+                            Autres professeurs dans ce créneau
                         </p>
                         <div className="space-y-2">
                             {allCurrentSessions
@@ -157,17 +157,17 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                             <p className="text-sm font-semibold text-gray-800 truncate">{session.teacher}</p>
                                             <p className="text-xs text-gray-400 truncate">{session.subject} — {session.class}</p>
                                         </div>
-                                        <div className="flex gap-1.5 flex-shrink-0 mr-3">
+                                        <div className="flex gap-1.5 flex-shrink-0 ml-3">
                                             <button onClick={() => handlePresent(session.id)} disabled={recording === session.id}
-                                                className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50">
+                                                className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50" title="Présent">
                                                 <CheckCircle size={15} />
                                             </button>
                                             <button onClick={() => openModal('absent', session.id)}
-                                                className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                                                className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Absent">
                                                 <XCircle size={15} />
                                             </button>
                                             <button onClick={() => openModal('late', session.id)}
-                                                className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors">
+                                                className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors" title="Retard">
                                                 <AlertTriangle size={15} />
                                             </button>
                                         </div>
@@ -181,15 +181,15 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
             {/* ── Modal ── */}
             {modalState.type && (
                 <Modal
-                    title={modalState.type === 'absent' ? 'تسجيل غياب' : modalState.type === 'late' ? 'تسجيل تأخر' : 'إضافة ملاحظة'}
+                    title={modalState.type === 'absent' ? 'Enregistrer Absence' : modalState.type === 'late' ? 'Enregistrer Retard' : 'Ajouter Motif'}
                     onClose={closeModal}
                 >
-                    <div className="space-y-4" dir="rtl">
+                    <div className="space-y-4" dir="ltr">
                         {modalState.type === 'absent' && (
                             <textarea
                                 value={modalState.value}
                                 onChange={e => setModalState(s => ({ ...s, value: e.target.value }))}
-                                placeholder="سبب الغياب (اختياري)..."
+                                placeholder="Raison de l'absence (optionnelle)..."
                                 className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-red-200"
                                 rows={3}
                             />
@@ -198,7 +198,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                             <textarea
                                 value={modalState.value}
                                 onChange={e => setModalState(s => ({ ...s, value: e.target.value }))}
-                                placeholder="اكتب الملاحظة هنا..."
+                                placeholder="Écrire le motif ici..."
                                 className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-blue-200"
                                 rows={4} autoFocus
                             />
@@ -213,7 +213,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                         className="w-20 text-center text-3xl font-bold text-amber-600 border-b-2 border-amber-300 outline-none bg-transparent"
                                         min={1}
                                     />
-                                    <p className="text-xs text-gray-400 mt-1">دقيقة</p>
+                                    <p className="text-xs text-gray-400 mt-1">minutes</p>
                                 </div>
                                 <button onClick={() => setModalState(s => ({ ...s, value: s.value + 5 }))}
                                     className="w-10 h-10 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-lg">+</button>
@@ -225,10 +225,10 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     modalState.type === 'absent' ? 'bg-red-500 hover:bg-red-600' :
                                     modalState.type === 'late'   ? 'bg-amber-500 hover:bg-amber-600' :
                                                                    'bg-blue-500 hover:bg-blue-600'
-                                }`}>تأكيد</button>
+                                }`}>Confirmer</button>
                             <button onClick={closeModal}
                                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">
-                                إلغاء
+                                Annuler
                             </button>
                         </div>
                     </div>
@@ -240,7 +240,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
 
 const LoadingState = ({ className }: { className: string }) => (
     <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
-        <div className="bg-green-700 p-4"><div className="h-5 bg-white/20 rounded w-48 animate-pulse" /></div>
+        <div className="bg-slate-800 p-4"><div className="h-5 bg-white/20 rounded w-48 animate-pulse" /></div>
         <div className="p-5 space-y-3">
             {[1,2,3,4].map(i => (
                 <div key={i} className="flex items-center gap-3">
@@ -253,38 +253,38 @@ const LoadingState = ({ className }: { className: string }) => (
 );
 
 const ErrorState = ({ error, refetch, className }: { error: string; refetch: () => void; className: string }) => (
-    <div className={`bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden ${className}`} dir="rtl">
+    <div className={`bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden ${className}`} dir="ltr">
         <div className="bg-red-600 p-4">
-            <h3 className="text-white font-bold flex items-center gap-2"><AlertOctagon size={18} /> خطأ</h3>
+            <h3 className="text-white font-bold flex items-center gap-2"><AlertOctagon size={18} /> Erreur</h3>
         </div>
         <div className="p-6 text-center">
             <p className="text-gray-500 text-sm mb-4">{error}</p>
             <button onClick={refetch} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-gray-100 transition-colors">
-                <RefreshCw size={16} /> إعادة المحاولة
+                <RefreshCw size={16} /> Réessayer
             </button>
         </div>
     </div>
 );
 
 const EmptyState = ({ nextSession, className }: { nextSession: any; className: string }) => (
-    <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="rtl">
-        <div className="bg-gray-600 p-4">
-            <h3 className="text-white font-bold flex items-center gap-2"><Clock size={18} /> الحصة الحالية</h3>
+    <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="ltr">
+        <div className="bg-slate-800 p-4">
+            <h3 className="text-white font-bold flex items-center gap-2"><Clock size={18} className="text-orange-500" /> Session en cours</h3>
         </div>
         <div className="p-8 text-center">
             <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Clock size={24} className="text-gray-400" />
             </div>
-            <p className="font-semibold text-gray-700 mb-1">لا توجد حصة حالية</p>
+            <p className="font-semibold text-gray-700 mb-1">Aucune session en cours</p>
             {nextSession ? (
-                <div className="mt-4 bg-green-50 rounded-xl p-4 border border-green-100 text-right">
-                    <p className="text-xs text-green-600 font-semibold mb-1">الحصة القادمة</p>
+                <div className="mt-4 bg-orange-50 rounded-xl p-4 border border-orange-100 text-left">
+                    <p className="text-xs text-orange-600 font-semibold mb-1">Session suivante</p>
                     <p className="text-sm font-bold text-gray-800">{nextSession.teacher}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{nextSession.subject} — {nextSession.class}</p>
-                    <p className="text-xs text-gray-400 mt-0.5" dir="ltr">{fmt(nextSession.time_start)} - {fmt(nextSession.time_end)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{fmt(nextSession.time_start)} - {fmt(nextSession.time_end)}</p>
                 </div>
             ) : (
-                <p className="text-sm text-gray-400">لا توجد حصص متبقية لهذا اليوم</p>
+                <p className="text-sm text-gray-400">Aucune autre session pour aujourd'hui</p>
             )}
         </div>
     </div>

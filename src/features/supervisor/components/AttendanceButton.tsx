@@ -19,13 +19,13 @@ export const AttendanceButton = ({ status, onMark, loading = false }: Attendance
                 className={`opacity-100 cursor-default ${colors.bg} ${colors.text} ${colors.border}`}
                 leftIcon={status === 'present' ? <Check size={18} className={colors.icon} /> : <X size={18} className={colors.icon} />}
             >
-                {status === 'present' ? 'تم تسجيل الحضور' : 'تم تسجيل الغياب'}
+                {status === 'present' ? 'Présent enregistré' : 'Absent enregistré'}
             </Button>
         );
     }
 
     return (
-        <div className="flex gap-3 mt-4">
+        <div className="flex gap-3 mt-4" dir="ltr">
             <Button
                 variant="success"
                 fullWidth
@@ -35,7 +35,7 @@ export const AttendanceButton = ({ status, onMark, loading = false }: Attendance
                 leftIcon={!loading && <Check size={18} />}
                 className="shadow-sm hover:shadow"
             >
-                حاضر
+                Présent
             </Button>
             <Button
                 variant="danger"
@@ -46,7 +46,7 @@ export const AttendanceButton = ({ status, onMark, loading = false }: Attendance
                 leftIcon={!loading && <X size={18} />}
                 className="shadow-sm hover:shadow"
             >
-                غائب
+                Absent
             </Button>
         </div>
     );

@@ -26,7 +26,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
     }, []);
 
     return (
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30 transition-all duration-500">
+        <header dir="ltr" className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30 transition-all duration-500">
             {/* Left side: Empty or Breadcrumbs if needed */}
             <div className="flex-1">
                 {onToggleSidebar && (
@@ -43,18 +43,18 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
             <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-3 p-1.5 pl-3 pr-2 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-gray-200/50 rounded-2xl border border-gray-100 transition-all duration-300 group ring-4 ring-transparent hover:ring-blue-50"
+                    className="flex items-center gap-3 p-1.5 pl-3 pr-2 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-gray-200/50 rounded-2xl border border-gray-100 transition-all duration-300 group ring-4 ring-transparent hover:ring-orange-50"
                 >
                     <div className="flex flex-col items-end text-end">
                         <span className="text-sm font-bold text-gray-900 leading-none mb-1">
-                            {user?.email?.split('@')[0]}
+                            {user?.email?.split('@')[0] || user?.name || 'Utilisateur'}
                         </span>
-                        <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">
-                            {userRole === 'admin' ? t('navbar.roleAdmin') : t('navbar.roleSupervisor')}
+                        <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider">
+                            {userRole === 'admin' ? 'Administrateur' : 'Superviseur'}
                         </span>
                     </div>
                     
-                    <div className="w-10 h-10 bg-blue-300 rounded-full flex items-center justify-center text-white shadow-inner transform group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 shadow-inner transform group-hover:scale-110 transition-transform duration-300">
                         <User size={20} />
                     </div>
                     
@@ -75,7 +75,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                         <div className="space-y-1">
                             <div className="px-4 py-2 flex items-center justify-between text-gray-600 hover:bg-gray-50 transition-colors">
                                 <span className="flex items-center gap-2 text-sm font-medium">
-                                    <Globe size={18} className="text-blue-500" />
+                                    <Globe size={18} className="text-orange-500" />
                                     {t('common.language') || 'Langue'}
                                 </span>
                                 <div className="scale-90 origin-end">
@@ -88,7 +88,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                                 className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-bold"
                             >
                                 <LogOut size={18} />
-                                <span>{t('navbar.logout')}</span>
+                                <span>Déconnexion</span>
                             </button>
                         </div>
                     </div>

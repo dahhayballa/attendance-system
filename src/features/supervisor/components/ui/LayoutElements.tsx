@@ -1,5 +1,4 @@
-import React from 'react';
-
+﻿
 export const SectionHeader = ({ title, subtitle }: { title: string; subtitle: string }) => (
     <div className="flex items-center gap-3">
         <div className="w-1 h-8 bg-blue-500 rounded-full" />

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { supervisorAssignmentsService, SupervisorAssignment } from '../../../services/supabase/supervisor-assignments.service';
 import Card from '../../../shared/components/ui/Card';
 import Button from '../../../shared/components/ui/Button';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Plus, Trash2, Users, Building, BookOpen, UserPlus } from 'lucide-react';
+import { Trash2, Users, Building, BookOpen, UserPlus } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 
 export const SupervisorAssignmentsPage = () => {

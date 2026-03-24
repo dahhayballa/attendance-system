@@ -82,16 +82,22 @@ export const getRecentAttendance = async (limit = 20): Promise<Attendance[]> => 
  * Statistiques rapides de la journée
  */
 export const getTodayStats = async () => {
+    const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const today = days[new Date().getDay()];
+
     const { data, error } = await supabase
         .from('schedules')
-        .select('status');
+        .select('status')
+        .eq('day', today);
 
     if (error) throw error;
 
-    const total = data.length;
-    const completed = data.filter(d => d.status === 'completed').length;
-    const pending = total - completed;
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const total    = data.length;
+    const present  = data.filter(d => d.status === 'present').length;
+    const absent   = data.filter(d => d.status === 'absent').length;
+    const recorded = present + absent;
+    const pending  = total - recorded;
+    const rate     = total > 0 ? Math.round((recorded / total) * 100) : 0;
 
-    return { total, completed, pending, rate };
+    return { total, present, absent, pending, rate };
 };

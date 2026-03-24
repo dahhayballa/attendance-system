@@ -13,9 +13,9 @@ const cookieStorage = {
     return match ? decodeURIComponent(match[1]) : null;
   },
   setItem: (key: string, value: string): void => {
-    // 7 days expiry — SameSite=Lax prevents CSRF, Secure when on HTTPS
+    // 6 days expiry — SameSite=Lax prevents CSRF, Secure when on HTTPS
     const secure = location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=604800; SameSite=Lax${secure}`;
+    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=518400; SameSite=Lax${secure}`;
   },
   removeItem: (key: string): void => {
     document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax`;

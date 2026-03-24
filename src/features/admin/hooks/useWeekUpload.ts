@@ -1,157 +1,133 @@
 ﻿import { useState } from 'react';
 import { supabase } from '../../../services/supabase/client';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { useToast } from '../../../shared/hooks/useToast';
 import * as XLSX from 'xlsx';
+
+const parseJour = (raw: any) => {
+  const s = String(raw || '').replace(/\\n/g, '\n').trim();
+  const lines = s.split('\n');
+  const day = lines[0]?.trim() || 'Lundi';
+  const match = (lines[1] || '').match(/(\d{1,2})h\s*[-]\s*(\d{1,2})h/);
+  return {
+    day,
+    time_start: match ? `${match[1].padStart(2,'0')}:00:00` : '08:00:00',
+    time_end:   match ? `${match[2].padStart(2,'0')}:00:00` : '10:00:00',
+  };
+};
 
 export const useWeekUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  /**
-   * دالة لتنظيف وتفكيك نص اليوم والوقت
-   * تحول "Jeudi\n08h - 10h" إلى { dayName: "Jeudi", startTime: "08:00:00", endTime: "10:00:00" }
-   */
-  const parseDateTime = (rawDay: any) => {
-    try {
-      const cleanText = String(rawDay || '').replace(/\r/g, '').trim();
-      const parts = cleanText.split('\n');
-      
-      const dayName = parts[0].trim();
-      const timeRange = parts[1] ? parts[1].trim() : '';
-
-      let startTime = "08:00:00";
-      let endTime = "10:00:00";
-
-      if (timeRange.includes('-')) {
-        const times = timeRange.split('-').map(t => {
-          let hour = t.toLowerCase().replace('h', '').trim();
-          // ضمان تنسيق الوقت HH:00:00
-          return hour.padStart(2, '0') + ':00:00';
-        });
-        startTime = times[0];
-        endTime = times[1];
-      }
-
-      return { dayName, startTime, endTime };
-    } catch (e) {
-      console.error("Error parsing date/time:", rawDay);
-      return { dayName: String(rawDay), startTime: "08:00:00", endTime: "10:00:00" };
-    }
-  };
-
-  const uploadWeek = async (file: File) => {
-    // إعداد القيم الافتراضية
-    const finalStartDate = new Date().toISOString().split('T')[0];
-    const finalWeekName = file.name.replace(/\.[^.]+$/, '');
-
+  const uploadWeek = async (file: File): Promise<boolean> => {
     setIsUploading(true);
     setUploadProgress(10);
 
-    const reader = new FileReader();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
 
-    reader.onload = async (e) => {
-      try {
-        const data = e.target?.result;
-        
-        // 1. قراءة الملف (يدعم Excel و CSV)
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        
-        // تحويل البيانات إلى مصفوفة صفوف (Array of Arrays)
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
 
-        if (!rows || rows.length === 0) throw new Error("الملف فارغ أو غير صالح!");
+          // Lire toutes les lignes comme tableau de tableaux
+          const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', range: 2 }) as any[][];
 
-        // 2. البحث عن سطر العناوين (Classe, Matière, Jour...)
-        const headerIndex = rows.findIndex(row => 
-          row && Array.isArray(row) && row.some(cell => {
-            const c = String(cell || '').toLowerCase();
-            return c.includes('classe') || c.includes('matière') || c.includes('jour');
-          })
-        );
+          // Trouver la ligne qui contient "Classe" comme header réel
+          const headerRowIndex = allRows.findIndex(row =>
+            row.some((cell: any) => String(cell).trim() === 'Classe')
+          );
 
-        // إذا لم يجد العناوين تلقائياً، نفترض السطر الثالث (النموذجي لملفات MPG)
-        const actualHeaderIndex = headerIndex !== -1 ? headerIndex : 2;
-        const headers = rows[actualHeaderIndex].map(h => String(h || '').trim());
-        const dataRows = rows.slice(actualHeaderIndex + 1);
+          if (headerRowIndex === -1) throw new Error('Colonne "Classe" introuvable dans le fichier');
 
-        console.log("[Debug] العناوين المكتشفة:", headers);
+          const headers = allRows[headerRowIndex].map((h: any) => String(h).trim());
+          const dataRows = allRows.slice(headerRowIndex + 1);
 
-        // 3. إنشاء سجل الأسبوع في Supabase
-        const { data: weekData, error: weekError } = await supabase
-          .from('weeks')
-          .insert([{ 
-            name: finalWeekName, 
-            start_date: finalStartDate 
-          }])
-          .select()
-          .single();
+          console.log('[Upload] Headers found at row', headerRowIndex, ':', headers);
+          console.log('[Upload] Data rows:', dataRows.length);
 
-        if (weekError) throw weekError;
+          // Convertir en objets
+          const objects = dataRows.map(row => {
+            const obj: Record<string, any> = {};
+            headers.forEach((h, i) => { if (h) obj[h] = row[i] ?? ''; });
+            return obj;
+          });
 
-        // 4. تحضير الحصص للرفع (تجهيز الـ Objects)
-        const schedulesToInsert = dataRows
-          .map((row) => {
-            if (!row || row.length === 0) return null;
+          // Filtrer lignes valides
+          const validRows = objects.filter(obj => {
+            const cls = String(obj['Classe'] ?? '').trim();
+            return cls && cls !== 'Classe' && !cls.includes('Établissement');
+          });
 
-            const obj: any = {};
-            headers.forEach((header, i) => {
-              if (header) obj[header] = row[i];
-            });
+          if (validRows.length === 0) throw new Error('Aucune ligne valide trouvée');
 
-            const className = obj['Classe'] || obj['classe'] || obj['class'];
-            const dayRow = obj['Jour'] || obj['jour'] || obj['day'];
+          console.log('[Upload] Valid rows:', validRows.length);
+          console.log('[Upload] Sample pointer:', validRows[0]['Pointeur']);
 
-            // استثناء الصفوف الفارغة أو الترويسات المكررة
-            if (!className || !dayRow || String(className).includes('Établissement')) {
-              return null;
-            }
+          setUploadProgress(25);
 
-            const { dayName, startTime, endTime } = parseDateTime(dayRow);
+          // Créer la semaine
+          const { data: weekData, error: weekError } = await supabase
+            .from('weeks')
+            .insert([{
+              name: file.name.replace(/\.[^.]+$/, ''),
+              start_date: new Date().toISOString().split('T')[0],
+              uploaded_by: user?.id ?? null,
+            }])
+            .select().single();
 
-            // إرجاع الكائن بما يتوافق مع قاعدة البيانات الحالية
+          if (weekError) throw weekError;
+          setUploadProgress(40);
+
+          // Préparer les schedules
+          const schedules = validRows.map(obj => {
+            const { day, time_start, time_end } = parseJour(obj['Jour']);
             return {
-              week_id: weekData.id,
-              class: String(className).trim(),
-              subject: String(obj['Matière'] || obj['matière'] || obj['subject'] || '').trim(),
-              room: String(obj['Salle'] || obj['salle'] || obj['room'] || '').trim(),
-              teacher: String(obj['Formateur'] || obj['formateur'] || obj['teacher'] || '').trim(),
-              day: dayName,
-              time_start: startTime,
-              time_end: endTime,
-              status: 'pending'
+              week_id:    weekData.id,
+              class:      String(obj['Classe']    ?? '').trim(),
+              subject:    String(obj['Matière']   ?? obj['Matiere'] ?? '').trim(),
+              room:       String(obj['Salle']      ?? '').trim() || null,
+              teacher:    String(obj['Formateur'] ?? '').trim(),
+              pointer:    String(obj['Pointeur']  ?? '').trim() || null,
+              day,
+              time_start,
+              time_end,
+              status: 'pending' as const,
             };
-          })
-          .filter(item => item !== null);
+          }).filter(s => s.class && s.teacher);
 
-        if (schedulesToInsert.length === 0) {
-          throw new Error("لم يتم العثور على حصص صالحة في الملف.");
+          setUploadProgress(60);
+
+          // Insérer par batch
+          let inserted = 0;
+          for (let i = 0; i < schedules.length; i += 50) {
+            const { error } = await supabase.from('schedules').insert(schedules.slice(i, i + 50));
+            if (error) throw error;
+            inserted += Math.min(50, schedules.length - i);
+            setUploadProgress(60 + Math.round((inserted / schedules.length) * 35));
+          }
+
+          setUploadProgress(100);
+          toast.success(`✅ ${inserted} cours importés avec succès!`);
+          resolve(true);
+
+        } catch (err: any) {
+          console.error('[Upload Error]', err);
+          toast.error(`Erreur: ${err.message}`);
+          resolve(false);
+        } finally {
+          setIsUploading(false);
         }
+      };
 
-        setUploadProgress(50);
-
-        // 5. الرفع الجماعي للحصص إلى Supabase
-        const { error: scheduleError } = await supabase
-          .from('schedules')
-          .insert(schedulesToInsert);
-
-        if (scheduleError) throw scheduleError;
-
-        toast.success(`تم رفع ${schedulesToInsert.length} حصة بنجاح!`);
-        setUploadProgress(100);
-
-      } catch (error: any) {
-        console.error('Upload Error:', error);
-        toast.error(`فشل الرفع: ${error.message}`);
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-    // قراءة الملف كـ Buffer لدعم ملفات Excel
-    reader.readAsArrayBuffer(file);
+      reader.onerror = () => { setIsUploading(false); resolve(false); };
+      reader.readAsArrayBuffer(file);
+    });
   };
 
   return { uploadWeek, isUploading, uploadProgress };

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+﻿import { ReactNode, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,7 @@ export interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { i18n } = useTranslation();
-    const dir = i18n.language && i18n.language.startsWith('ar') ? 'rtl' : 'ltr';
+    const dir = 'ltr';
 
     return (
         <div className="min-h-screen bg-gray-50 flex overflow-hidden font-sans" dir={dir}>

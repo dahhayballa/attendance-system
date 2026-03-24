@@ -68,46 +68,52 @@ export const LiveDashboardPage = () => {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6">
-                <div className="flex justify-between items-center bg-gray-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
+            <div className="flex flex-col gap-6" dir="ltr">
+                <div className="flex justify-between items-center bg-white border border-gray-100 p-6 rounded-2xl shadow-sm relative overflow-hidden">
+                    {/* Decorative glow */}
+                    <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+                        style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+                    
                     <div className="relative z-10">
-                        <h2 className="text-2xl font-bold flex items-center gap-2">
-                            <Activity className="text-red-400 animate-pulse" /> لوحة المراقبة
+                        <h2 className="text-2xl font-bold flex items-center gap-3 text-gray-900 border-l-4 border-orange-500 pl-3">
+                            <Activity className="text-orange-500 animate-pulse" /> Suivi en Direct
                         </h2>
-                        <p className="text-gray-400 mt-1">يتم تحديث البيانات والإشعارات فورياً دون الحاجة لتحديث الصفحة</p>
+                        <p className="text-gray-500 mt-2 font-medium">Les données et alertes sont mises à jour instantanément sans avoir besoin d'actualiser la page.</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* عمود الإشعارات */}
-                    <Card className="lg:col-span-1 shadow-sm h-[600px] flex flex-col" padding="p-0">
-                        <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex items-center gap-2 sticky top-0 z-10">
-                            <Bell size={18} className="text-amber-500" />
-                            تنبيهات فورية
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full mr-auto">
-                                {notifications.filter(n => !n.read).length} جديد
+                    {/* Colonne Notifications/Alertes */}
+                    <Card className="lg:col-span-1 shadow-sm h-[600px] flex flex-col border-gray-100" padding="p-0">
+                        <div className="p-4 border-b border-gray-100 bg-gray-50/50 font-bold text-gray-800 flex items-center gap-2 sticky top-0 z-10 px-5">
+                            <Bell size={18} className="text-orange-500" />
+                            Alertes instantanées
+                            <span className="bg-orange-500 text-white text-xs px-2.5 py-0.5 rounded-full ml-auto shadow-sm">
+                                {notifications.filter(n => !n.read).length} nouveau
                             </span>
                         </div>
-                        <div className="overflow-y-auto flex-1 p-2 space-y-2">
+                        <div className="overflow-y-auto flex-1 p-3 space-y-2">
                             {notifications.length === 0 ? (
-                                <p className="text-center text-gray-500 py-8">لا توجد إشعارات حالياً</p>
+                                <p className="text-center text-gray-400 font-medium py-10">Aucune alerte pour le moment</p>
                             ) : (
                                 notifications.map(n => (
                                     <div
                                         key={n.id}
                                         onClick={() => markAsRead(n.id, n.read)}
-                                        className={`p-3 rounded-xl border-r-4 cursor-pointer transition-colors ${n.type === 'absent' ? 'border-red-500 bg-red-50' :
-                                            n.type === 'late' ? 'border-amber-500 bg-amber-50' :
-                                                'border-blue-500 bg-blue-50'
-                                            } ${!n.read ? 'opacity-100 shadow-sm' : 'opacity-60 grayscale-[50%]'}`}
+                                        className={`p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                                            n.type === 'absent' ? 'border-red-500 bg-red-50 hover:shadow-md' :
+                                            n.type === 'late' ? 'border-amber-500 bg-amber-50 hover:shadow-md' :
+                                            'border-blue-500 bg-blue-50 hover:shadow-md'
+                                        } ${!n.read ? 'opacity-100' : 'opacity-60 grayscale-[30%]'}`}
                                     >
-                                        <h4 className={`font-bold text-sm ${n.type === 'absent' ? 'text-red-700' :
+                                        <h4 className={`font-bold text-sm ${
+                                            n.type === 'absent' ? 'text-red-700' :
                                             n.type === 'late' ? 'text-amber-700' :
-                                                'text-blue-700'
-                                            }`}>{n.title}</h4>
-                                        <p className="text-xs text-gray-600 mt-1">{n.message}</p>
-                                        <p className="text-[10px] text-gray-400 mt-2" dir="ltr text-right">
-                                            {new Date(n.created_at).toLocaleTimeString('ar-MR')}
+                                            'text-blue-700'
+                                        }`}>{n.title}</h4>
+                                        <p className="text-xs text-gray-600 font-medium mt-1.5 leading-relaxed">{n.message}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 mt-2 flex justify-end">
+                                            {new Date(n.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
                                 ))
@@ -115,52 +121,63 @@ export const LiveDashboardPage = () => {
                         </div>
                     </Card>
 
-                    {/* عمود الخريطة والنشاطات */}
+                    {/* Colonne Stats & Activités */}
                     <div className="lg:col-span-2 space-y-6 flex flex-col">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-gray-500 text-sm">الحصص</span>
-                                <span className="text-2xl font-bold text-gray-800">{stats.total}</span>
+                            <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
+                                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Séances</span>
+                                <span className="text-3xl font-black text-gray-900">{stats.total}</span>
                             </div>
-                            <div className="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-green-600 text-sm flex items-center gap-1"><UserCheck size={14} /> حضور</span>
-                                <span className="text-2xl font-bold text-green-700">{stats.present}</span>
+                            <div className="bg-green-50 p-4 rounded-2xl border border-green-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
+                                <span className="text-green-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1"><UserCheck size={14} /> Présents</span>
+                                <span className="text-3xl font-black text-green-700">{stats.present}</span>
                             </div>
-                            <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-red-600 text-sm flex items-center gap-1"><XCircle size={14} /> غياب</span>
-                                <span className="text-2xl font-bold text-red-700">{stats.absent}</span>
+                            <div className="bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
+                                <span className="text-red-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1"><XCircle size={14} /> Absents</span>
+                                <span className="text-3xl font-black text-red-700">{stats.absent}</span>
                             </div>
-                            <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-amber-600 text-sm flex items-center gap-1"><AlertTriangle size={14} /> تأخر</span>
-                                <span className="text-2xl font-bold text-amber-700">{stats.late || 0}</span>
+                            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
+                                <span className="text-amber-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1"><AlertTriangle size={14} /> En retard</span>
+                                <span className="text-3xl font-black text-amber-700">{stats.late || 0}</span>
                             </div>
                         </div>
 
-                        <Card className="shadow-sm flex-1" padding="p-0">
-                            <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex items-center gap-2">
-                                <Clock size={18} className="text-blue-500" />
-                                تتبع المشرفين (آخر التسجيلات الميدانية)
+                        <Card className="shadow-sm flex-1 border-gray-100" padding="p-0">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50/50 font-bold text-gray-800 flex items-center gap-2 px-5">
+                                <Clock size={18} className="text-orange-500" />
+                                Activité des Superviseurs (Derniers enregistrements)
                             </div>
                             <div className="p-4">
                                 <div className="space-y-3">
                                     {recentLogs.map((log: any) => (
-                                        <div key={log.id} className="flex justify-between items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                                        <div key={log.id} className="flex justify-between items-center p-4 rounded-xl border border-gray-100 hover:bg-orange-50/30 transition-colors">
                                             <div>
-                                                <div className="font-bold text-gray-800 text-sm">{log.schedule?.teacher}</div>
-                                                <div className="text-xs text-gray-500">{log.schedule?.class} | المشرف: {log.user_name || 'غير معروف'}</div>
+                                                <div className="font-bold text-gray-900 text-sm mb-1">{log.schedule?.teacher}</div>
+                                                <div className="text-xs font-medium text-gray-500">
+                                                    {log.schedule?.class} <span className="text-gray-300 mx-1">|</span> <span className="text-orange-600/80">Superviseur: {log.user_name || 'Inconnu'}</span>
+                                                </div>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${log.status === 'present' ? 'bg-green-100 text-green-700' :
-                                                    log.status === 'absent' ? 'bg-red-100 text-red-700' :
-                                                        log.status === 'late' ? 'bg-amber-100 text-amber-700' :
-                                                            'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                    {log.status === 'present' ? 'حاضر' : log.status === 'absent' ? 'غائب' : log.status === 'late' ? 'متأخر' : 'ملاحظة'}
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm ${
+                                                    log.status === 'present' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                                    log.status === 'absent' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                                    log.status === 'late' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                    'bg-blue-100 text-blue-700 border border-blue-200'
+                                                }`}>
+                                                    {log.status === 'present' ? 'Présent' : log.status === 'absent' ? 'Absent' : log.status === 'late' ? 'Retard' : 'Motif'}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 mt-1" dir="ltr">{new Date(log.recorded_at).toLocaleTimeString('ar-MR')}</span>
+                                                <span className="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1">
+                                                    <Clock size={10} />
+                                                    {new Date(log.recorded_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
                                             </div>
                                         </div>
                                     ))}
+                                    {recentLogs.length === 0 && (
+                                        <div className="text-center py-10 text-gray-400 text-sm font-medium">
+                                            Aucun enregistrement récent
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>

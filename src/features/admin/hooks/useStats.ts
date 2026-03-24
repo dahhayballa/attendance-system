@@ -29,8 +29,8 @@ export const useStats = () => {
             setStats(statsData);
             setRecentLogs(logsData);
         } catch (err: any) {
-            console.error('Error fetching dashboard data:', err);
-            setError('فشل في تحميل إحصائيات لوحة التحكم');
+            setError('Échec du chargement des statistiques du tableau de bord');
+            console.error('Error fetching admin stats:', err);
         } finally {
             setLoading(false);
         }

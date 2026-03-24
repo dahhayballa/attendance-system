@@ -26,6 +26,10 @@ const resources = {
       header: {
         toggleSidebar: 'تبديل القائمة الجانبية',
         notifications: 'الإشعارات',
+        notificationsTitle: 'التنبيهات الفورية',
+        markAllRead: 'تحديد الكل كمقروء',
+        noAlerts: 'لا توجد تنبيهات حالياً',
+        close: 'إغلاق',
         toggleDarkMode: 'تبديل الوضع الليلي',
         logout: 'تسجيل الخروج',
         defaultUserName: 'مراقب',
@@ -248,6 +252,10 @@ const resources = {
       header: {
         toggleSidebar: 'Basculer le menu latéral',
         notifications: 'Notifications',
+        notificationsTitle: 'Alertes instantanées',
+        markAllRead: 'Tout marquer lu',
+        noAlerts: 'Aucune alerte pour le moment',
+        close: 'Fermer',
         toggleDarkMode: 'Basculer le thème sombre',
         logout: 'Se déconnecter',
         defaultUserName: 'Superviseur',

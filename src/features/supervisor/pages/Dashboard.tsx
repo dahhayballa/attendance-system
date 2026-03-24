@@ -75,7 +75,7 @@ const Dashboard = () => {
 
     return (
         <SupervisorLayout>
-            <div className="space-y-6 pb-8" dir="ltr">
+            <div className="space-y-6 pb-8">
 
                 {/* ══ HERO CARD ══ */}
                 <div className="relative overflow-hidden rounded-2xl p-6 text-gray-900 bg-white border border-orange-100 shadow-sm">
@@ -89,7 +89,7 @@ const Dashboard = () => {
                     <div className="relative z-10 flex items-start justify-between">
                         <div>
                             <p className="text-sm font-bold text-orange-500 uppercase tracking-widest">{getGreeting()}</p>
-                            <h1 className="text-3xl font-black mt-1 text-gray-900">
+                            <h1 className="text-2xl font-black mt-1 text-gray-900">
                                 {user?.name?.split(' ').slice(0, 2).join(' ') ?? 'Superviseur'}
                             </h1>
                             <p className="text-sm mt-1 capitalize font-medium text-gray-500">
@@ -98,6 +98,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right rounded-xl px-4 py-3 flex-shrink-0 bg-orange-50 border border-orange-100">
                             <p className="text-2xl font-mono font-black tabular-nums text-gray-900">{timeStr}</p>
+                            <hr className="border-orange-100" />
                             <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5 text-orange-600">EETFP-MPG</p>
                         </div>
                     </div>

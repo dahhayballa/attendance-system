@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+﻿import { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase/client';
 import { loginWithEmail, logoutUser } from '../../services/supabase/auth.service';
@@ -7,7 +7,7 @@ import { User } from '../../types';
 
 export interface AuthContextType {
   user: User | null;
-  userRole: 'admin' | 'supervisor' | null;
+  userRole: 'admin' | 'supervisor' | 'surveillance' | null;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -25,7 +25,7 @@ interface AuthProviderProps {
 /**
  * دالة جلب الرتبة مع آلية حماية من التعليق (Timeout)
  */
-const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supervisor' | null> => {
+const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supervisor' | 'surveillance' | null> => {
   console.log('[AuthProvider] محاولة جلب الرتبة للمعرف:', userId);
 
   // 🚀 حقن يدوي لكسر الدوامة فوراً
@@ -53,7 +53,7 @@ const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supe
 
     console.log('[AuthProvider] استجابة القاعدة:', data);
     if (data?.name) localStorage.setItem('userName', data.name);
-        return (data?.role as 'admin' | 'supervisor') || null;
+        return (data?.role as 'admin' | 'supervisor' | 'surveillance') || null;
   } catch (err: any) {
     if (err.name === 'AbortError') {
       console.warn('[AuthProvider] انتهت مهلة الطلب (Timeout) - الرتبة ستكون null');
@@ -66,8 +66,8 @@ const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supe
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'supervisor' | null>(() => {
-    return localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+  const [userRole, setUserRole] = useState<'admin' | 'supervisor' | 'surveillance' | null>(() => {
+    return localStorage.getItem('userRole') as 'admin' | 'supervisor' | 'surveillance' | null;
   });
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+          const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | 'surveillance' | null;
           
           if (cachedRole && isMounted.current) {
             setUser({ id: session.user.id, email: session.user.email!, role: cachedRole, name: localStorage.getItem('userName') ?? undefined });
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log(`[AuthProvider] حدث خارجي: ${event}`);
 
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | 'surveillance' | null;
         
         if (cachedRole && isMounted.current) {
           setUser({ id: session.user.id, email: session.user.email!, role: cachedRole, name: localStorage.getItem('userName') ?? undefined });
@@ -180,7 +180,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(true);
       const data = await loginWithEmail(email, password);
       if (data?.user) {
-        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
+        const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | 'surveillance' | null;
         const role = await fetchUserRoleWithTimeout(data.user.id);
         const finalRole = role || cachedRole;
 

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { realtimeService, Notification } from '../../../services/supabase/realtime.service';
 import { useToast } from '../../hooks/useToast';
+import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
 
 export const NotificationBell = () => {
+    const { t } = useTranslation();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -73,7 +75,7 @@ export const NotificationBell = () => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`relative p-2 rounded-2xl transition-all duration-300 ring-4 ring-transparent hover:ring-orange-50 ${isOpen ? 'bg-orange-50 text-orange-600' : 'bg-gray-50/50 text-gray-400 hover:text-orange-500 hover:bg-white border border-gray-100'}`}
-                title="Notifications"
+                title={t('header.notifications')}
             >
                 <Bell size={20} className={unreadCount > 0 ? 'animate-wiggle' : ''} />
                 {unreadCount > 0 && (
@@ -84,29 +86,29 @@ export const NotificationBell = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full mt-3 end-0 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200 overflow-hidden z-50">
+                <div className="fixed top-24 left-4 right-4 sm:absolute sm:top-full sm:mt-3 sm:left-auto sm:right-auto sm:end-0 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200 z-50 flex flex-col pt-1">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             <Bell size={16} className="text-orange-500" />
-                            Alertes instantanées
+                            {t('header.notificationsTitle')}
                         </h3>
                         {unreadCount > 0 && (
                             <button 
                                 onClick={markAllAsRead} 
                                 className="text-[10px] font-bold uppercase tracking-wider text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-1 rounded-md transition-colors"
                             >
-                                Tout marquer lu
+                                {t('header.markAllRead')}
                             </button>
                         )}
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
+                    <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto p-2 space-y-1">
                         {notifications.length === 0 ? (
                             <div className="py-10 text-center flex flex-col items-center justify-center gap-2">
                                 <div className="p-3 bg-gray-50 rounded-full text-gray-300">
                                     <Bell size={24} />
                                 </div>
-                                <p className="text-sm text-gray-400 font-medium">Aucune alerte pour le moment</p>
+                                <p className="text-sm text-gray-400 font-medium">{t('header.noAlerts')}</p>
                             </div>
                         ) : (
                             notifications.map(n => (
@@ -125,7 +127,7 @@ export const NotificationBell = () => {
                                             n.type === 'late' ? 'text-amber-700' :
                                             'text-blue-700'
                                         }`}>{n.title}</h4>
-                                        <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap ml-2">
+                                        <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap ltr:ml-2 rtl:mr-2">
                                             {new Date(n.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
@@ -140,7 +142,7 @@ export const NotificationBell = () => {
                                 onClick={() => setIsOpen(false)}
                                 className="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                             >
-                                Fermer
+                                {t('header.close')}
                             </button>
                         </div>
                     )}

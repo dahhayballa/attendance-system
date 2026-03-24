@@ -44,6 +44,17 @@ export const recordAttendance = async (
         .single();
 
     if (error) throw error;
+
+    // تحديث status في schedules
+    await supabase
+        .from('schedules')
+        .update({
+            status,
+            recorded_by: userId,
+            recorded_at: new Date().toISOString(),
+        })
+        .eq('id', scheduleId);
+
     return data as Attendance;
 };
 

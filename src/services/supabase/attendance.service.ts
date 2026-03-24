@@ -38,30 +38,43 @@ export const getAttendanceLogs = async (filters: LogsFilters = {}): Promise<Atte
         .from('attendance_logs')
         .select(`
             id,
+            schedule_id,
             status,
             recorded_at,
             schedule:schedules!attendance_logs_schedule_id_fkey(teacher, subject, class),
-            user:profiles!attendance_logs_recorded_by_fkey(full_name, email)
-        `) // ملاحظة: غيرت اسم الجدول من users إلى profiles لأنه الغالب في Supabase
+            user:users!attendance_logs_recorded_by_fkey(name, email)
+        `)
         .order('recorded_at', { ascending: false });
 
     if (filters.limit) {
-        query = query.limit(filters.limit);
+        query = query.limit(filters.limit * 5); // زيادة العدد للتصفية محلياً
     }
 
     const { data, error } = await query;
     if (error) throw error;
 
-    return data.map((log: any) => ({
+    // تصفية السجلات لتجنب تكرار نفس الحصة إذا قام المشرف بالضغط مراراً
+    const uniqueLogs: any[] = [];
+    const seenSchedules = new Set();
+    
+    for (const log of (data || [])) {
+        if (!seenSchedules.has(log.schedule_id)) {
+            uniqueLogs.push(log);
+            seenSchedules.add(log.schedule_id);
+            if (filters.limit && uniqueLogs.length >= filters.limit) break;
+        }
+    }
+
+    return uniqueLogs.map((log: any) => ({
         id: log.id,
-        schedule_id: '',
-        user_id: '',
+        schedule_id: log.schedule_id,
+        user_id: '', // Not strictly needed
         status: log.status,
         created_at: log.recorded_at,
         teacher_name: log.schedule?.teacher,
-        class_name: log.schedule?.class, // أضفنا الفصل هنا
+        class_name: log.schedule?.class,
         subject: log.schedule?.subject,
-        user_name: log.user?.full_name || log.user?.email?.split('@')[0] || 'مجهول',
+        user_name: log.user?.name || log.user?.email?.split('@')[0] || 'Inconnu',
     }));
 };
 

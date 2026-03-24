@@ -53,7 +53,7 @@ export const adminService = {
     return true;
   },
 
-  // 4. جلب آخر النشاطات (هذا هو الجزء الذي كان ينقصك)
+  // 4. جلب آخر النشاطات (خالية من التكرار لنفس الحصة)
   getRecentLogs: async () => {
     const { data, error } = await supabase
       .from('attendance_logs')
@@ -61,12 +61,31 @@ export const adminService = {
         id,
         status,
         recorded_at,
-        schedule:schedules(teacher, class, subject)
+        schedule_id,
+        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject),
+        user:users!attendance_logs_recorded_by_fkey(name, email)
       `)
       .order('recorded_at', { ascending: false })
-      .limit(10); // سنجلب آخر 10 عمليات
+      .limit(50); // نجلب بزيادة ثم نصفيها
 
     if (error) throw error;
-    return data || [];
+    
+    // تصفية السجلات لتجنب التكرار (عرض أحدث حالة فقط لكل حصة)
+    const uniqueLogs: any[] = [];
+    const seenSchedules = new Set();
+    
+    for (const item of (data || [])) {
+        const log = item as any;
+        if (!seenSchedules.has(log.schedule_id)) {
+            uniqueLogs.push({
+                ...log,
+                user_name: log.user?.name || log.user?.email?.split('@')[0] || 'Inconnu'
+            });
+            seenSchedules.add(log.schedule_id);
+            if (uniqueLogs.length >= 10) break; // نريد فقط آخر 10 فريدة
+        }
+    }
+
+    return uniqueLogs;
   }
 };

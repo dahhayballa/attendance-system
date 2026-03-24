@@ -7,6 +7,7 @@ import LanguageSwitcher from '../ui/LanguageSwitcher';
 interface HeaderProps {
     onToggleSidebar?: () => void;
 }
+import { NotificationBell } from './NotificationBell';
 
 const Header = ({ onToggleSidebar }: HeaderProps) => {
     const { user, userRole, logout } = useAuth();
@@ -39,8 +40,11 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                 )}
             </div>
 
-            {/* Right side: User Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            {/* Right side: Actions & User Dropdown */}
+            <div className="flex items-center gap-4">
+                <NotificationBell />
+
+                <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center gap-3 p-1.5 pl-3 pr-2 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-gray-200/50 rounded-2xl border border-gray-100 transition-all duration-300 group ring-4 ring-transparent hover:ring-orange-50"
@@ -93,6 +97,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </header>
     );

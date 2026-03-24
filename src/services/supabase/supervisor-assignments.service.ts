@@ -30,7 +30,7 @@ export const supervisorAssignmentsService = {
         const { data, error } = await supabase
             .from('users')
             .select('id, email, name')
-            .eq('role', 'supervisor');
+            .in('role', ['supervisor', 'surveillance']);
 
         if (error) throw error;
         return data;

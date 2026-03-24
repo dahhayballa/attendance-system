@@ -39,15 +39,21 @@ const Dashboard = () => {
     }, []);
 
     const fetchData = useCallback(async () => {
-        if (!user?.name) return;
+        if (!user) return;
         setLoading(true);
         try {
             const today  = FR_DAYS[new Date().getDay()];
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
-            const { data } = await supabase
+            let query = supabase
                 .from('schedules').select('*')
-                .eq('day', today).eq('pointer', user.name);
+                .eq('day', today);
+
+            if (user.role === 'supervisor' && user.name) {
+                query = query.eq('pointer', user.name);
+            }
+
+            const { data } = await query;
 
             if (data) {
                 const total   = data.length;

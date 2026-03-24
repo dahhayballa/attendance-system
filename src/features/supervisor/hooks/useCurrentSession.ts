@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase/client';
 import { useAuth } from '../../auth/hooks/useAuth';
 import type { Schedule } from '../types';
@@ -85,8 +85,6 @@ export const useCurrentSession = () => {
                 .eq('day', todayName)
                 .order('time_start', { ascending: true });
 
-            // supervisor → filtre par pointer
-            // surveillance → voit TOUT sans filtre
             if (user?.role === 'supervisor' && user?.name) {
                 query = query.eq('pointer', user.name);
             }

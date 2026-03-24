@@ -1,4 +1,4 @@
-﻿import { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase/client';
 import { loginWithEmail, logoutUser } from '../../services/supabase/auth.service';
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         loading,
         isAuthenticated: !!user,
         isAdmin: userRole === 'admin',
-        isSupervisor: userRole === 'supervisor',
+        isSupervisor: userRole === 'supervisor' || userRole === 'surveillance',
         login,
         logout,
       }}

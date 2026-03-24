@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SupervisorLayout from '../../components/SupervisorLayout';
 import CurrentSessionCard from '../../components/CurrentSessionCard';
 import { supabase } from '../../../../services/supabase/client';
@@ -17,9 +17,11 @@ const AttendanceRecordPage = () => {
             const today = days[new Date().getDay()];
 
             let query = supabase.from('schedules').select('status').eq('day', today);
+            
             if (user?.role === 'supervisor' && user?.name) {
                 query = query.eq('pointer', user.name);
             }
+            
             const { data } = await query;
 
             if (data) {

@@ -2,7 +2,7 @@
     id: string;
     email: string;
     name?: string;
-    role: 'admin' | 'supervisor' | null;
+    role: 'admin' | 'supervisor' | 'surveillance' | null;
 }
 
 export interface Schedule {

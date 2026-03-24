@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+﻿import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
@@ -6,7 +6,7 @@ import Loading from '../ui/Loading';
 
 export interface ProtectedRouteProps {
     children: ReactNode;
-    requireRole?: 'admin' | 'supervisor';
+    requireRole?: 'admin' | 'supervisor' | 'surveillance';
 }
 
 export const ProtectedRoute = ({ children, requireRole }: ProtectedRouteProps) => {
@@ -22,7 +22,7 @@ export const ProtectedRoute = ({ children, requireRole }: ProtectedRouteProps) =
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (requireRole && requireRole !== userRole) {
+    if (requireRole && requireRole !== userRole && !(requireRole === 'supervisor' && userRole === 'surveillance')) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
                 <div className="text-center max-w-sm w-full p-8 bg-white rounded-2xl shadow-xl border border-gray-100">

@@ -27,7 +27,7 @@ export const useCurrentSession = () => {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const getTodayName = (): string => {
-        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
         return days[new Date().getDay()];
     };
 
@@ -42,7 +42,7 @@ export const useCurrentSession = () => {
 
         const current = schedules.filter(s => {
             const start = timeToMinutes(s.time_start);
-            const end = timeToMinutes(s.time_end);
+            const end   = timeToMinutes(s.time_end);
             return currentMinutes >= start && currentMinutes < end;
         });
 
@@ -56,7 +56,7 @@ export const useCurrentSession = () => {
 
         if (mainSession) {
             const start = timeToMinutes(mainSession.time_start);
-            const end = timeToMinutes(mainSession.time_end);
+            const end   = timeToMinutes(mainSession.time_end);
             const total = end - start;
             const elapsed = currentMinutes - start;
             timeRemaining = end - currentMinutes;
@@ -85,7 +85,8 @@ export const useCurrentSession = () => {
                 .eq('day', todayName)
                 .order('time_start', { ascending: true });
 
-            // Filtrer par pointer pour les superviseurs
+            // supervisor → filtre par pointer
+            // surveillance → voit TOUT sans filtre
             if (user?.role === 'supervisor' && user?.name) {
                 query = query.eq('pointer', user.name);
             }
@@ -95,7 +96,7 @@ export const useCurrentSession = () => {
             processSchedules(data as Schedule[]);
         } catch (err: any) {
             console.error('[useCurrentSession] Erreur:', err);
-            setState(prev => ({ ...prev, loading: false, error: 'فشل في تحميل الحصص' }));
+            setState(prev => ({ ...prev, loading: false, error: 'Erreur de chargement' }));
         }
     }, [processSchedules, user?.role, user?.name]);
 

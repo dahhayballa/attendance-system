@@ -1,25 +1,9 @@
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-    Home, 
-    BarChart3, 
-    FileText, 
-    Settings, 
-    Activity, 
-    Shield, 
-    Clock,
-    LayoutDashboard,
-    ClipboardList,
-    X,
-    ChevronRight,
-    ChevronDown,
-    CheckSquare,
-    List,
-    Users as UsersIcon,
-    CalendarDays,
-    UserMinus
+import {
+    Home, Clock, ClipboardList, BarChart3, Settings,
+    LayoutDashboard, Activity, Shield, FileText,
+    X, ChevronRight, LogOut
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 
 interface SidebarProps {
@@ -27,165 +11,192 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+const SUPERVISOR_NAV = [
+    {
+        section: 'Pointage',
+        items: [
+            { id: 'home',       label: 'Accueil',         icon: Home,          path: '/supervisor'                    },
+            { id: 'now',        label: 'Séance en cours', icon: Clock,         path: '/supervisor/now'                },
+            { id: 'attendance', label: 'Enregistrement',  icon: ClipboardList, path: '/supervisor/attendance'         },
+        ]
+    },
+    {
+        section: 'Analyse',
+        items: [
+            { id: 'records',    label: 'Historique',      icon: FileText,      path: '/supervisor/attendance/records'  },
+            { id: 'statistics', label: 'Statistiques',    icon: BarChart3,     path: '/supervisor/statistics'         },
+        ]
+    },
+    {
+        section: 'Système',
+        items: [
+            { id: 'settings',   label: 'Paramètres',      icon: Settings,      path: '/supervisor/settings'           },
+        ]
+    },
+];
+
+const ADMIN_NAV = [
+    {
+        section: 'Administration',
+        items: [
+            { id: 'dashboard',   label: 'Tableau de bord', icon: LayoutDashboard, path: '/admin'              },
+            { id: 'live',        label: 'Suivi en direct', icon: Activity,        path: '/admin/live'         },
+        ]
+    },
+    {
+        section: 'Gestion',
+        items: [
+            { id: 'supervisors', label: 'Superviseurs',    icon: Shield,          path: '/admin/supervisors'  },
+            { id: 'reports',     label: 'Rapports',        icon: FileText,        path: '/admin/reports'      },
+        ]
+    },
+];
+
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
-    const { userRole } = useAuth();
-    const { t, i18n } = useTranslation();
+    const { userRole, logout, user } = useAuth();
     const location = useLocation();
-    const [expandedMenus, setExpandedMenus] = useState<string[]>(['attendance']);
 
-    const isRTL = i18n.language && i18n.language.startsWith('ar');
+    const nav = userRole === 'admin' ? ADMIN_NAV : SUPERVISOR_NAV;
 
-    const toggleMenu = (id: string) => {
-        setExpandedMenus(prev => 
-            prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
-        );
+    const isActive = (path: string) => {
+        if (path === '/supervisor' || path === '/admin') {
+            return location.pathname === path;
+        }
+        return location.pathname.startsWith(path);
     };
-
-    const adminItems = [
-        { id: 'admin-dashboard', label: t('admin.sidebar.dashboard'), icon: LayoutDashboard, path: '/admin' },
-        { id: 'live-dashboard', label: t('admin.sidebar.liveDashboard'), icon: Activity, path: '/admin/live' },
-        { id: 'supervisors', label: t('admin.sidebar.supervisors'), icon: Shield, path: '/admin/supervisors' },
-        { id: 'admin-reports', label: t('admin.sidebar.reports'), icon: FileText, path: '/admin/reports' },
-    ];
-
-    const supervisorItems = [
-        { id: 'dashboard', label: t('supervisor.sidebar.home'), icon: Home, path: '/supervisor' },
-        { id: 'now', label: t('supervisor.sidebar.now'), icon: Clock, path: '/supervisor/now' },
-        { 
-            id: 'attendance',
-            label: t('supervisor.sidebar.attendance'), 
-            icon: ClipboardList, 
-            path: '/supervisor/attendance',
-            subItems: [
-                { id: 'att-record', label: t('supervisor.sidebar.attendanceRecord'), icon: CheckSquare, path: '/supervisor/attendance' },
-                { id: 'att-records', label: t('supervisor.sidebar.attendanceRecords'), icon: List, path: '/supervisor/attendance/records' },
-                { id: 'att-teachers', label: t('supervisor.sidebar.attendanceTeachers'), icon: UsersIcon, path: '/supervisor/attendance/teachers' },
-                { id: 'att-calendar', label: t('supervisor.sidebar.attendanceCalendar'), icon: CalendarDays, path: '/supervisor/attendance/calendar' },
-                { id: 'att-absent', label: t('supervisor.sidebar.attendanceAbsent'), icon: UserMinus, path: '/supervisor/attendance/absent' },
-            ]
-        },
-        { id: 'statistics', label: t('supervisor.sidebar.statistics'), icon: BarChart3, path: '/supervisor/statistics' },
-        { id: 'reports', label: t('supervisor.sidebar.reports'), icon: FileText, path: '/supervisor/reports' },
-        { id: 'settings', label: t('supervisor.sidebar.settings'), icon: Settings, path: '/supervisor/settings' },
-    ];
-
-    const navItems = userRole === 'admin' ? adminItems : supervisorItems;
 
     return (
         <>
-            {/* Backdrop for mobile */}
-            <div 
-                className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            {/* Mobile backdrop */}
+            <div
+                className={`fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-200 ${
+                    isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
                 onClick={onClose}
-            ></div>
+            />
 
-            {/* Sidebar container */}
-            <aside 
-                className={`fixed inset-y-0 ${isRTL ? 'right-0' : 'left-0'} z-50 w-72 bg-white border-${isRTL ? 'l' : 'r'} border-gray-100 flex flex-col shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static ${isOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}`}
+            {/* Sidebar */}
+            <aside
+                className={`
+                    fixed inset-y-0 left-0 z-50 w-64
+                    bg-white border-r border-gray-100
+                    flex flex-col shadow-xl
+                    transform transition-transform duration-300 ease-in-out
+                    lg:translate-x-0 lg:static lg:shadow-none
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                `}
             >
-                {/* Header/Branding */}
-                <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50 bg-white sticky top-0 z-10">
+                {/* ── Logo ── */}
+                <div className="h-16 flex items-center justify-between px-5 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        <img 
-                            src="/logo-mpg.png" 
-                            alt="MPG Logo" 
-                            className="w-10 h-10 object-contain drop-shadow-sm" 
-                        />
-                        <div className="flex flex-col">
-                            <span className="font-black text-xl text-gray-900 leading-none tracking-tight">
-                                MPG
-                            </span>
-                            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest mt-1 opacity-80">EETFP Attendance</span>
+                        <div className="w-9 h-9 bg-green-700 rounded-xl flex items-center justify-center shadow-sm">
+                            <span className="text-white font-black text-sm">MPG</span>
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-900 text-sm leading-none">EETFP-MPG</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Système de présence</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose} 
-                        className="lg:hidden p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"
+                    <button
+                        onClick={onClose}
+                        className="lg:hidden p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
-                {/* Navigation Links */}
-                <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto custom-scrollbar">
-                    <div className="px-3 mb-6">
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('common.mainMenu') || 'Main Menu'}</p>
+                {/* ── User info card ── */}
+                <div className="mx-3 mt-4 px-3 py-3 bg-gray-50 rounded-xl border border-gray-100 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-green-700 font-bold text-xs">
+                                {(user?.name || user?.email || '?').charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">
+                                {user?.name || user?.email?.split('@')[0]}
+                            </p>
+                            <p className="text-[10px] text-green-600 font-medium uppercase tracking-wide">
+                                {userRole === 'admin' ? 'Administrateur' : 'Superviseur'}
+                            </p>
+                        </div>
                     </div>
-                    {navItems.map((item: any) => {
-                        const hasSubItems = item.subItems && item.subItems.length > 0;
-                        const isExpanded = expandedMenus.includes(item.id);
-                        const isMainActive = location.pathname === item.path || (hasSubItems && item.subItems.some((s: any) => location.pathname === s.path));
+                </div>
 
-                        return (
-                            <div key={item.id} className="space-y-1">
-                                {hasSubItems ? (
-                                    <button
-                                        onClick={() => toggleMenu(item.id)}
-                                        className={`
-                                            w-full group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300
-                                            ${isMainActive 
-                                                ? 'bg-blue-50/80 text-blue-700 font-bold' 
-                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}
-                                        `}
-                                    >
-                                        <item.icon size={20} className={`shrink-0 ${isMainActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500 transition-colors'}`} />
-                                        <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'} text-sm font-semibold`}>{item.label}</span>
-                                        <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-500' : ''}`} />
-                                    </button>
-                                ) : (
-                                    <NavLink
-                                        to={item.path}
-                                        end
-                                        onClick={() => {
-                                            if (window.innerWidth < 1024) onClose();
-                                        }}
-                                        className={({ isActive }) => `
-                                            group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300
-                                            ${isActive 
-                                                ? 'bg-blue-50/80 text-blue-700 font-bold' 
-                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}
-                                        `}
-                                    >
-                                        <item.icon size={20} className={`shrink-0 transition-transform duration-300 ${isMainActive ? 'text-blue-600 scale-110' : 'text-gray-400 group-hover:scale-110 group-hover:text-blue-500'}`} />
-                                        <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'} text-sm font-semibold`}>{item.label}</span>
-                                        {!isRTL && <ChevronRight size={14} className={`opacity-0 group-hover:opacity-40 transition-all transform translate-x-2 group-hover:translate-x-0`} />}
-                                    </NavLink>
-                                )}
+                {/* ── Navigation ── */}
+                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+                    {nav.map((group) => (
+                        <div key={group.section}>
+                            {/* Section title */}
+                            <p className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                {group.section}
+                            </p>
 
-                                {hasSubItems && isExpanded && (
-                                    <div className={`${isRTL ? 'mr-10' : 'ml-10'} space-y-1 mt-2 animate-in slide-in-from-top-4 duration-300`}>
-                                        {item.subItems.map((sub: any) => {
-                                            const SubIcon = sub.icon;
-                                            return (
-                                                <NavLink
-                                                    key={sub.id}
-                                                    to={sub.path}
-                                                    end
-                                                    onClick={() => {
-                                                        if (window.innerWidth < 1024) onClose();
-                                                    }}
-                                                    className={({ isActive }) => `
-                                                        flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition-all duration-300
-                                                        ${isActive 
-                                                            ? `text-blue-700 font-black bg-blue-50/50 relative before:absolute before:${isRTL ? 'right-0' : 'left-0'} before:top-1/4 before:bottom-1/4 before:w-1 before:bg-blue-600 before:rounded-full` 
-                                                            : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}
-                                                    `}
-                                                >
-                                                    {({ isActive }) => (
-                                                        <>
-                                                            <SubIcon size={16} className={`shrink-0 ${isActive ? 'text-blue-600' : 'opacity-40'}`} />
-                                                            <span className="flex-1">{sub.label}</span>
-                                                        </>
-                                                    )}
-                                                </NavLink>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                            {/* Items */}
+                            <div className="space-y-0.5">
+                                {group.items.map((item) => {
+                                    const active = isActive(item.path);
+                                    return (
+                                        <NavLink
+                                            key={item.id}
+                                            to={item.path}
+                                            onClick={() => {
+                                                if (window.innerWidth < 1024) onClose();
+                                            }}
+                                            className={`
+                                                flex items-center gap-3 px-3 py-2.5 rounded-xl
+                                                transition-all duration-150 group
+                                                ${active
+                                                    ? 'bg-green-50 text-green-800'
+                                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                                }
+                                            `}
+                                        >
+                                            {/* Icon box */}
+                                            <div className={`
+                                                w-8 h-8 rounded-lg flex items-center justify-center
+                                                flex-shrink-0 transition-colors
+                                                ${active
+                                                    ? 'bg-green-700 text-white shadow-sm'
+                                                    : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:text-gray-600'
+                                                }
+                                            `}>
+                                                <item.icon size={16} />
+                                            </div>
+
+                                            {/* Label */}
+                                            <span className={`flex-1 text-sm ${active ? 'font-semibold' : 'font-medium'}`}>
+                                                {item.label}
+                                            </span>
+
+                                            {/* Active arrow */}
+                                            {active && (
+                                                <ChevronRight size={14} className="text-green-500 flex-shrink-0" />
+                                            )}
+                                        </NavLink>
+                                    );
+                                })}
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </nav>
+
+                {/* ── Logout ── */}
+                <div className="p-3 border-t border-gray-100 flex-shrink-0">
+                    <button
+                        onClick={() => logout()}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+                                text-gray-500 hover:text-red-600 hover:bg-red-50
+                                transition-all duration-150 group"
+                    >
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-red-100
+                                        flex items-center justify-center flex-shrink-0 transition-colors">
+                            <LogOut size={15} className="group-hover:text-red-500" />
+                        </div>
+                        <span>Déconnexion</span>
+                    </button>
+                </div>
             </aside>
         </>
     );

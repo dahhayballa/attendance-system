@@ -56,7 +56,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 className={`
                     fixed inset-y-0 ltr:left-0 rtl:right-0 z-50 w-64 flex flex-col bg-white
                     transform transition-transform duration-300 ease-in-out ltr:border-r rtl:border-l border-gray-100
-                    lg:translate-x-0 lg:static
+                    lg:!translate-x-0 lg:static
                     ${isOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'}
                 `}
                 style={{

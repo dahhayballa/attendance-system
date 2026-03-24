@@ -40,7 +40,7 @@ const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supe
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('role')
+      .select('role, name')
       .eq('id', userId)
       .maybeSingle();
 
@@ -52,7 +52,8 @@ const fetchUserRoleWithTimeout = async (userId: string): Promise<'admin' | 'supe
     }
 
     console.log('[AuthProvider] استجابة القاعدة:', data);
-    return (data?.role as 'admin' | 'supervisor') || null;
+    if (data?.name) localStorage.setItem('userName', data.name);
+        return (data?.role as 'admin' | 'supervisor') || null;
   } catch (err: any) {
     if (err.name === 'AbortError') {
       console.warn('[AuthProvider] انتهت مهلة الطلب (Timeout) - الرتبة ستكون null');
@@ -97,7 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
           
           if (cachedRole && isMounted.current) {
-            setUser({ id: session.user.id, email: session.user.email!, role: cachedRole });
+            setUser({ id: session.user.id, email: session.user.email!, role: cachedRole, name: localStorage.getItem('userName') ?? undefined });
             setUserRole(cachedRole);
             setLoading(false); // Stop loading immediately for instant UI
 
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               const role = await fetchUserRoleWithTimeout(session.user.id);
               if (role && role !== cachedRole && isMounted.current) {
                 localStorage.setItem('userRole', role);
-                setUser({ id: session.user.id, email: session.user.email!, role });
+                setUser({ id: session.user.id, email: session.user.email!, role, name: localStorage.getItem('userName') ?? undefined });
                 setUserRole(role);
               }
             }, 10);
@@ -117,7 +118,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               localStorage.setItem('userRole', role);
             }
             if (isMounted.current) {
-              setUser({ id: session.user.id, email: session.user.email!, role });
+              setUser({ id: session.user.id, email: session.user.email!, role, name: localStorage.getItem('userName') ?? undefined });
               setUserRole(role);
             }
           }
@@ -138,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const cachedRole = localStorage.getItem('userRole') as 'admin' | 'supervisor' | null;
         
         if (cachedRole && isMounted.current) {
-          setUser({ id: session.user.id, email: session.user.email!, role: cachedRole });
+          setUser({ id: session.user.id, email: session.user.email!, role: cachedRole, name: localStorage.getItem('userName') ?? undefined });
           setUserRole(cachedRole);
           setLoading(false);
 
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             const role = await fetchUserRoleWithTimeout(session.user.id);
             if (role && role !== cachedRole && isMounted.current) {
               localStorage.setItem('userRole', role);
-              setUser({ id: session.user.id, email: session.user.email!, role });
+              setUser({ id: session.user.id, email: session.user.email!, role, name: localStorage.getItem('userName') ?? undefined });
               setUserRole(role);
             }
           }, 10);
@@ -155,7 +156,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const role = await fetchUserRoleWithTimeout(session.user.id);
           if (role) localStorage.setItem('userRole', role);
           if (isMounted.current) {
-            setUser({ id: session.user.id, email: session.user.email!, role });
+            setUser({ id: session.user.id, email: session.user.email!, role, name: localStorage.getItem('userName') ?? undefined });
             setUserRole(role);
           }
         }
@@ -187,7 +188,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           localStorage.setItem('userRole', finalRole);
         }
 
-        const currentUser: User = { id: data.user.id, email: data.user.email!, role: finalRole };
+        const currentUser: User = { id: data.user.id, email: data.user.email!, role: finalRole, name: localStorage.getItem('userName') ?? undefined };
         setUser(currentUser);
         setUserRole(finalRole);
         return { data: { ...data, resolvedUser: currentUser }, error: null };

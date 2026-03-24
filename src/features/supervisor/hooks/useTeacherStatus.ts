@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -30,7 +30,7 @@ export const useTeacherStatus = () => {
     const [error, setError] = useState<string | null>(null);
 
     const todayName = (): string => {
-        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         return days[new Date().getDay()];
     };
 

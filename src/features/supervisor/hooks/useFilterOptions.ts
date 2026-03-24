@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 interface FilterOption {
@@ -20,13 +20,13 @@ interface FilterOptionsData {
 }
 
 const DAYS: FilterOption[] = [
-    { value: 'الأحد', label: 'الأحد' },
-    { value: 'الإثنين', label: 'الإثنين' },
-    { value: 'الثلاثاء', label: 'الثلاثاء' },
-    { value: 'الأربعاء', label: 'الأربعاء' },
-    { value: 'الخميس', label: 'الخميس' },
-    { value: 'الجمعة', label: 'الجمعة' },
-    { value: 'السبت', label: 'السبت' },
+    { value: 'Dimanche', label: 'Dimanche' },
+    { value: 'Lundi', label: 'Lundi' },
+    { value: 'Mardi', label: 'Mardi' },
+    { value: 'Mercredi', label: 'Mercredi' },
+    { value: 'Jeudi', label: 'Jeudi' },
+    { value: 'Vendredi', label: 'Vendredi' },
+    { value: 'Samedi', label: 'Samedi' },
 ];
 
 const TIME_SLOTS: FilterOption[] = [

@@ -1,4 +1,4 @@
-import SupervisorLayout from '../components/SupervisorLayout';
+﻿import SupervisorLayout from '../components/SupervisorLayout';
 import CurrentSessionCard from '../components/CurrentSessionCard';
 import QuickTeacherList from '../components/QuickTeacherList';
 import { useSupervisorAttendance } from '../hooks/useSupervisorAttendance';
@@ -29,7 +29,7 @@ const Dashboard = () => {
                     <SectionHeader title={t('supervisor.dashboard.summaryTitle')} subtitle={t('supervisor.dashboard.summarySubtitle')} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
                         <StatCard icon={<Users size={22} />} label={t('supervisor.dashboard.totalSessions')} value={loading ? '...' : stats.total} color="blue" />
-                        <StatCard icon={<CheckCircle size={22} />} label={t('supervisor.dashboard.completedSessions')} value={loading ? '...' : stats.completed} color="green" />
+                        <StatCard icon={<CheckCircle size={22} />} label={t('supervisor.dashboard.completedSessions')} value={loading ? '...' : stats.present} color="green" />
                         <StatCard icon={<Clock size={22} />} label={t('supervisor.dashboard.pendingSessions')} value={loading ? '...' : stats.pending} color="amber" />
                         <StatCard icon={<TrendingUp size={22} />} label={t('supervisor.dashboard.completionRate')} value={loading ? '...' : `${stats.rate}%`} color="purple" />
                     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { supabase } from '../../../services/supabase/client';
 import { useToast } from '../../../shared/hooks/useToast';
 import * as XLSX from 'xlsx';
@@ -40,10 +40,10 @@ export const useWeekUpload = () => {
     }
   };
 
-  const uploadWeek = async (file: File, weekName: string, startDate: string) => {
+  const uploadWeek = async (file: File) => {
     // إعداد القيم الافتراضية
-    const finalStartDate = startDate || new Date().toISOString().split('T')[0];
-    const finalWeekName = weekName || `أسبوع - ${finalStartDate}`;
+    const finalStartDate = new Date().toISOString().split('T')[0];
+    const finalWeekName = file.name.replace(/\.[^.]+$/, '');
 
     setIsUploading(true);
     setUploadProgress(10);

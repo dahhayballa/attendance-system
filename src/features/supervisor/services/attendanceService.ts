@@ -1,4 +1,4 @@
-import { supabase } from '../../../services/supabase/client';
+﻿import { supabase } from '../../../services/supabase/client';
 import type { Attendance, Schedule, FilterOptions } from '../types';
 
 /**
@@ -37,7 +37,7 @@ export const recordAttendance = async (
             schedule_id: scheduleId,
             recorded_by: userId,
             status,
-            notes,
+            reason: notes ?? null,
             recorded_at: new Date().toISOString(),
         }])
         .select()

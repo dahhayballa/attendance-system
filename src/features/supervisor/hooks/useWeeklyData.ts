@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -31,7 +31,7 @@ export interface WeeklyData {
     error: string | null;
 }
 
-const DAYS_ORDER = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const DAYS_ORDER = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
 /**
  * Hook pour récupérer toutes les données d'une semaine

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase/client';
 import type { Schedule } from '../types';
 
@@ -30,7 +30,7 @@ export const useCurrentSession = () => {
 
     // Jour actuel en arabe pour matcher la colonne `day`
     const getTodayName = (): string => {
-        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         return days[new Date().getDay()];
     };
 

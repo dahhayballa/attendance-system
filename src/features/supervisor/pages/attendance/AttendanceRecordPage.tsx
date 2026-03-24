@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import SupervisorLayout from '../../components/SupervisorLayout';
 import CurrentSessionCard from '../../components/CurrentSessionCard';
@@ -18,7 +18,7 @@ const AttendanceRecordPage = () => {
     const fetchSummary = useCallback(async () => {
         try {
             setLoading(true);
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
             const today = days[new Date().getDay()];
 
             const { data } = await supabase

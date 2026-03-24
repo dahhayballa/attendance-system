@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -70,7 +70,7 @@ export const useAlerts = () => {
 
     // Jour actuel en arabe
     const getTodayName = (): string => {
-        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         return days[new Date().getDay()];
     };
 

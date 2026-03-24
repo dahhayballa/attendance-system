@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useWeeklyData, useCalendarNavigation, type CalendarCell } from '../hooks/useWeeklyData';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { recordAttendance } from '../services/attendanceService';
@@ -38,7 +38,7 @@ const WeeklyCalendar = ({ className = '' }: WeeklyCalendarProps) => {
         cells.find(c => c.day === day && c.timeSlot === slot);
 
     // Today's day name for highlighting
-    const todayName = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][new Date().getDay()];
+    const todayName = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][new Date().getDay()];
 
     // Record attendance from cell detail
     const handleRecord = async (scheduleId: string, status: 'present' | 'absent' | 'late' | 'excused') => {

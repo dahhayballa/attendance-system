@@ -1,4 +1,4 @@
-export interface User {
+﻿export interface User {
     id: string;
     email: string;
     role: 'admin' | 'supervisor' | null;
@@ -213,7 +213,7 @@ export interface ClassStats {
 // ─────────────────────────────────────────────────────────────
 
 export interface DayStats {
-  day: string                     // الاثنين, الثلاثاء...
+  day: string                     // الاثنين, Mardi...
   date: string                    // 2026-03-03
   total_sessions: number
   attendance_rate: number         // %

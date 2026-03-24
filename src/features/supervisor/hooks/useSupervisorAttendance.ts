@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { getSchedules, recordAttendance, getTodayStats } from '../services/attendanceService';
 import type { Schedule, FilterOptions } from '../types';
 import { useAuth } from '../../auth/hooks/useAuth';
@@ -9,7 +9,7 @@ export const useSupervisorAttendance = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [markingId, setMarkingId] = useState<string | null>(null);
-    const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, rate: 0 });
+    const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, pending: 0, rate: 0 });
     const [filters, setFilters] = useState<Partial<FilterOptions>>({});
 
     const fetchSchedules = useCallback(async () => {
@@ -50,9 +50,9 @@ export const useSupervisorAttendance = () => {
             );
             setStats(prev => ({
                 ...prev,
-                completed: prev.completed + 1,
+                present: prev.present + 1,
                 pending: prev.pending - 1,
-                rate: prev.total > 0 ? Math.round(((prev.completed + 1) / prev.total) * 100) : 0,
+                rate: prev.total > 0 ? Math.round(((prev.present + 1) / prev.total) * 100) : 0,
             }));
 
             return { success: true };

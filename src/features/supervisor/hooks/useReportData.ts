@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -73,7 +73,7 @@ const DEFAULT_CONFIG: ReportConfig = {
 };
 
 const DAY_NAME = (d: Date) => {
-    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     return days[d.getDay()];
 };
 

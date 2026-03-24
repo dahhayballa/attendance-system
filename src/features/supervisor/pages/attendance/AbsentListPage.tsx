@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import SupervisorLayout from '../../components/SupervisorLayout';
 import { supabase } from '../../../../services/supabase/client';
 import {
@@ -34,7 +34,7 @@ const AbsentListPage = () => {
     const fetchAbsences = useCallback(async () => {
         try {
             setLoading(true);
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
             const today = days[new Date().getDay()];
 
             let query = supabase

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -76,7 +76,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
             if (!schedules) return;
 
             const now = new Date();
-            const todayStr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][now.getDay()];
+            const todayStr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][now.getDay()];
 
             // ═══ Overall ═══
             const overall = computePeriodStats(schedules);
@@ -141,7 +141,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
                 .slice(0, 8);
 
             // ═══ Tendance journalière ═══
-            const dayOrder = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const dayOrder = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
             const dailyTrend = dayOrder.map(day => {
                 const daySchedules = schedules.filter(s => s.day === day);
                 return {

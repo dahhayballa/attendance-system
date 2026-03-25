@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft } from 'lucide-react';
+import {  XCircle } from 'lucide-react';
 
 export interface ModalProps {
     title: string;
@@ -14,7 +14,7 @@ export const Modal = ({ title, onClose, children }: ModalProps) => (
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900">{title}</h3>
                 <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                    <ChevronLeft size={18} className="text-gray-400" />
+                    <XCircle size={18} className="text-gray-400" />
                 </button>
             </div>
             {children}

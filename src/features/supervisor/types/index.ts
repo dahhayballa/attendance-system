@@ -14,7 +14,9 @@ export interface Schedule {
     subject: string;
     class: string;
     room: string;
-    status?: 'pending' | 'completed' | 'cancelled';
+    status?: 'pending' | 'completed' | 'cancelled' | 'present' | 'absent' | 'late' | 'excused';
+    recorded_at?: string;
+    recorded_by?: string;
 }
 
 export interface Attendance {

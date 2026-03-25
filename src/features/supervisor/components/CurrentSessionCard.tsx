@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCurrentSession } from '../hooks/useCurrentSession';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { recordAttendance } from '../services/attendanceService';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Clock, BookOpen, User, MapPin, Building, CheckCircle, XCircle, AlertTriangle, FileText, RefreshCw, AlertOctagon } from 'lucide-react';
+import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search } from 'lucide-react';
 import { Modal } from '../../../shared/components/ui/Modal';
 
 interface CurrentSessionCardProps {
@@ -14,12 +14,21 @@ interface CurrentSessionCardProps {
 const fmt = (t: string) => t?.slice(0, 5) ?? '';
 
 const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSessionCardProps) => {
-    const { currentSession, nextSession, allCurrentSessions, timeRemaining, progress, loading, error, hasMultipleTeachers, refetch } = useCurrentSession();
+    const { currentSession, nextSession, allCurrentSessions, timeRemaining, progress, loading, error, refetch } = useCurrentSession();
     const { user } = useAuth();
     const { toast } = useToast();
 
     const [recording, setRecording] = useState<string | null>(null);
     const [modalState, setModalState] = useState<{ type: 'absent' | 'late' | 'notes' | null; scheduleId: string | null; value: any }>({ type: null, scheduleId: null, value: '' });
+    
+    const [searchQuery, setSearchQuery] = useState('');
+    const [infoSessionId, setInfoSessionId] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 10000);
+        return () => clearInterval(timer);
+    }, []);
 
     const handleRecord = async (scheduleId: string, status: 'present' | 'absent' | 'late' | 'excused', extraNotes?: string) => {
         if (!user) return;
@@ -41,9 +50,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
         }
     };
 
-    const handlePresent = (id: string) => handleRecord(id, 'present');
-    const openModal = (type: 'absent' | 'late' | 'notes', scheduleId: string) =>
-        setModalState({ type, scheduleId, value: type === 'late' ? 5 : '' });
+        // setModalState({ type, scheduleId, value: type === 'late' ? 5 : '' });
     const closeModal = () => setModalState({ type: null, scheduleId: null, value: '' });
 
     const confirmModal = () => {
@@ -58,127 +65,164 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
     if (error)   return <ErrorState error={error} refetch={refetch} className={className} />;
     if (!currentSession) return <EmptyState nextSession={nextSession} className={className} />;
 
+    // Filtrage dynamique
+    const filteredSessions = (allCurrentSessions || []).filter(s => 
+        s.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        s.subject?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const infoSession = allCurrentSessions?.find(s => s.id === infoSessionId);
+
     return (
         <>
-            <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="ltr">
+            <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col ${className}`} dir="ltr" style={{ maxHeight: 'min(800px, calc(100vh - 120px))' }}>
 
                 {/* ── Header ── */}
-                <div className="bg-slate-800 px-5 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-white">
+                <div className="bg-white-800 px-5 flex-shrink-0 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-black">
                         <Clock size={18} className="animate-pulse text-orange-500" />
-                        <span className="font-bold text-base">Session en Cours</span>
+                        <span className="font-bold text-base">Sessions en Cours</span>
                     </div>
-                    <span className="text-white/90 text-sm font-mono bg-white/10 px-3 py-1 rounded-lg">
-                        {fmt(currentSession.time_start)} — {fmt(currentSession.time_end)}
-                    </span>
+                    {currentSession && (
+                        <span className="text-dark text-sm font-mono bg-orange-500/10 px-3 py-1 rounded-lg ">
+                            {fmt(currentSession.time_start)} — {fmt(currentSession.time_end)}
+                        </span>
+                    )}
                 </div>
 
-                {/* ── Warning: multiple teachers ── */}
-                {hasMultipleTeachers && (
-                    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-amber-700 text-xs font-medium">
-                        <AlertTriangle size={14} />
-                        <span>{allCurrentSessions.length} professeurs dans ce créneau</span>
+                {/* ── Search Bar ── */}
+                <div className="p-4 border-b border-gray-100 flex-shrink-0 bg-white shadow-sm z-10">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Rechercher professeur ou matière..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 tracking-wide pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder-gray-400"
+                        />
                     </div>
-                )}
+                </div>
 
-                <div className="p-5">
-                    {/* ── Session info ── */}
-                    <div className="bg-gray-50 rounded-xl border border-gray-100 mb-5 overflow-hidden">
-                        {[
-                            { icon: <Building size={15} />,  label: 'Classe',   value: currentSession.class },
-                            { icon: <BookOpen size={15} />,  label: 'Matière',  value: currentSession.subject },
-                            { icon: <User size={15} />,      label: 'Professeur', value: currentSession.teacher, bold: true },
-                            { icon: <MapPin size={15} />,    label: 'Salle',  value: currentSession.room || '—' },
-                            { icon: <Clock size={15} />,     label: 'Restant',
-                              value: `${timeRemaining} min`,
-                              color: timeRemaining <= 10 ? 'text-red-600' : timeRemaining <= 20 ? 'text-amber-600' : 'text-green-600'
-                            },
-                        ].map(({ icon, label, value, bold, color }, i) => (
-                            <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 last:border-0">
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    {icon}
-                                    <span className="text-xs text-gray-500">{label}</span>
-                                </div>
-                                <span className={`text-sm ${bold ? 'font-bold text-gray-900' : 'text-gray-700'} ${color ?? ''}`}>
-                                    {value}
-                                </span>
+                {/* ── Enregistrements et Professeurs ── */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/50">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                        Liste des séances
+                    </p>
+                    {filteredSessions.length > 0 ? filteredSessions.map(session => (
+                        <div key={session.id} 
+                            className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100 hover:border-orange-300 transition-colors shadow-sm cursor-pointer group"
+                            onClick={() => setInfoSessionId(session.id)}
+                        >
+                            <div className="min-w-0 pr-3 flex-1">
+                                <p className="text-sm font-bold text-gray-800 truncate group-hover:text-orange-700 transition-colors">{session.teacher}</p>
+                                <p className="text-xs text-gray-500 font-medium truncate mt-0.5">{session.subject} — <span className="text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{session.class}</span></p>
                             </div>
-                        ))}
-                    </div>
+                            <div className="flex gap-1.5 flex-shrink-0 relative z-10" onClick={e => e.stopPropagation()}>
+                                {(() => {
+                                    const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
+                                    const [sh, sm] = (session.time_start || '00:00').split(':').map(Number);
+                                    const startMins = sh * 60 + sm;
+                                    const isLate = currentMins > startMins + 20;
+                                    const isRecorded = session.status && session.status !== 'pending';
+                                    
+                                    const statusToSend = isLate ? 'late' : 'present';
+                                    const Label = isLate ? 'En retard' : 'Présent';
+                                    const Icon = isLate ? AlertTriangle : CheckCircle;
+                                    const colorClass = isLate 
+                                        ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200' 
+                                        : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200';
 
-                    {/* ── Progress bar ── */}
-                    <div className="mb-5">
-                        <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                            <span>{fmt(currentSession.time_start)}</span>
-                            <span className="font-semibold text-gray-600">{progress}%</span>
-                            <span>{fmt(currentSession.time_end)}</span>
+                                    return (
+                                        <button 
+                                            onClick={() => handleRecord(session.id, statusToSend)} 
+                                            disabled={recording === session.id || isRecorded}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm ${isRecorded ? 'opacity-50 cursor-not-allowed grayscale' : 'active:scale-95'} ${colorClass}`}
+                                            title={isRecorded ? 'Déjà enregistré' : `Marquer ${Label}`}
+                                        >
+                                            <Icon size={16} className={!isRecorded ? 'animate-pulse' : ''} />
+                                            <span>{Label}</span>
+                                        </button>
+                                    );
+                                })()}
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div
-                                className="h-full rounded-full bg-orange-500 transition-all duration-1000"
-                                style={{ width: `${progress}%` }}
-                            />
+                    )) : (
+                        <div className="text-center py-10 text-gray-400 bg-white rounded-xl border border-gray-100 border-dashed">
+                            <Search size={24} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-sm font-medium">Aucun professeur ou matière trouvé</p>
                         </div>
-                    </div>
-
-                    {/* ── Action buttons ── */}
-                    <div className="grid grid-cols-4 gap-2">
-                        {[
-                            { label: 'Présent',   status: 'present', icon: <CheckCircle size={16} />,  cls: 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200', onClick: () => handlePresent(currentSession.id) },
-                            { label: 'Absent',   status: 'absent',  icon: <XCircle size={16} />,      cls: 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200',       onClick: () => openModal('absent', currentSession.id) },
-                            { label: 'Retard',  status: 'late',    icon: <AlertTriangle size={16} />, cls: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200', onClick: () => openModal('late', currentSession.id) },
-                            { label: 'Motif', status: 'excused', icon: <FileText size={16} />,     cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200',   onClick: () => openModal('notes', currentSession.id) },
-                        ].map(({ label, status, icon, cls, onClick }) => (
-                            <button
-                                key={status}
-                                onClick={onClick}
-                                disabled={recording === currentSession.id}
-                                className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-semibold transition-all disabled:opacity-50 ${cls}`}
-                            >
-                                {icon}
-                                {label}
-                            </button>
-                        ))}
-                    </div>
+                    )}
                 </div>
-
-                {/* ── Other teachers ── */}
-                {hasMultipleTeachers && (
-                    <div className="border-t border-gray-100 px-5 py-4">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                            Autres professeurs dans ce créneau
-                        </p>
-                        <div className="space-y-2">
-                            {allCurrentSessions
-                                .filter(s => s.id !== currentSession.id)
-                                .map(session => (
-                                    <div key={session.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-gray-800 truncate">{session.teacher}</p>
-                                            <p className="text-xs text-gray-400 truncate">{session.subject} — {session.class}</p>
-                                        </div>
-                                        <div className="flex gap-1.5 flex-shrink-0 ml-3">
-                                            <button onClick={() => handlePresent(session.id)} disabled={recording === session.id}
-                                                className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50" title="Présent">
-                                                <CheckCircle size={15} />
-                                            </button>
-                                            <button onClick={() => openModal('absent', session.id)}
-                                                className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Absent">
-                                                <XCircle size={15} />
-                                            </button>
-                                            <button onClick={() => openModal('late', session.id)}
-                                                className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors" title="Retard">
-                                                <AlertTriangle size={15} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {/* ── Modal ── */}
+            {/* ── Info Modal (Détails de la Session) ── */}
+            {infoSession && (
+                <Modal title="Détails de la Session" onClose={() => setInfoSessionId(null)}>
+                    <div dir="ltr">
+                        <div className="bg-gray-50 flex flex-col rounded-xl border border-gray-100 mb-5 overflow-hidden">
+                            {[
+                                { icon: <Building size={16} />,  label: 'Classe',   value: infoSession.class },
+                                { icon: <BookOpen size={16} />,  label: 'Matière',  value: infoSession.subject },
+                                { icon: <User size={16} />,      label: 'Professeur', value: infoSession.teacher, bold: true },
+                                { icon: <MapPin size={16} />,    label: 'Salle',  value: infoSession.room || '—' },
+                                { icon: <Clock size={16} />,     label: 'Temps restant',
+                                    value: `${timeRemaining} min`,
+                                    color: timeRemaining <= 10 ? 'text-red-600' : timeRemaining <= 20 ? 'text-amber-600' : 'text-green-600'
+                                },
+                                {
+                                    icon: <CheckCircle size={16} />,
+                                    label: 'Statut',
+                                    value: (() => {
+                                        const isRec = infoSession.status && infoSession.status !== 'pending';
+                                        if (isRec) {
+                                            const timeStr = infoSession.recorded_at ? new Date(infoSession.recorded_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                            if (infoSession.status === 'present') return `Présent à l'heure à ${timeStr}`;
+                                            if (infoSession.status === 'late') return `En retard ( a ${timeStr} )`;
+                                            if (infoSession.status === 'absent') return 'Absent enregistré';
+                                            return `Statut : ${infoSession.status}`;
+                                        }
+                                        const cm = currentTime.getHours() * 60 + currentTime.getMinutes();
+                                        const [h, m] = (infoSession.time_start || '00:00').split(':').map(Number);
+                                        const isL = cm > (h * 60 + m) + 20;
+                                        return isL ? "Sera marqué: En retard" : "Sera marqué: Présent";
+                                    })(),
+                                    color: (infoSession.status && infoSession.status !== 'pending') ? 'text-blue-600' : 'text-gray-500'
+                                },
+                            ].map(({ icon, label, value, bold, color }, i) => (
+                                <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-white transition-colors">
+                                    <div className="flex items-center gap-2.5 text-gray-500">
+                                        <div className="text-orange-500">{icon}</div>
+                                        <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
+                                    </div>
+                                    <span className={`text-sm tracking-wide ${bold ? 'font-black text-gray-900' : 'font-semibold text-gray-700'} ${color ?? ''}`}>
+                                        {value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* ── Progress bar ── */}
+                        <div className="mb-2 px-1">
+                            <div className="flex justify-between text-xs text-gray-400 mb-2">
+                                <span className="font-mono font-semibold">{fmt(infoSession.time_start)}</span>
+                                <span className="font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">{progress}%</span>
+                                <span className="font-mono font-semibold">{fmt(infoSession.time_end)}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-gray-200/50">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500 shadow-sm transition-all duration-1000"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+                        {/* boutton d'Actions */}
+
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── Action Modal ── */}
             {modalState.type && (
                 <Modal
                     title={modalState.type === 'absent' ? 'Enregistrer Absence' : modalState.type === 'late' ? 'Enregistrer Retard' : 'Ajouter Motif'}
@@ -190,7 +234,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                 value={modalState.value}
                                 onChange={e => setModalState(s => ({ ...s, value: e.target.value }))}
                                 placeholder="Raison de l'absence (optionnelle)..."
-                                className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-red-200"
+                                className="w-full p-3 border border-gray-200 rounded-xl text-sm font-medium outline-none resize-none focus:ring-2 focus:ring-red-200 placeholder-gray-400"
                                 rows={3}
                             />
                         )}
@@ -199,35 +243,35 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                 value={modalState.value}
                                 onChange={e => setModalState(s => ({ ...s, value: e.target.value }))}
                                 placeholder="Écrire le motif ici..."
-                                className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-blue-200"
+                                className="w-full p-3 border border-gray-200 rounded-xl text-sm font-medium outline-none resize-none focus:ring-2 focus:ring-blue-200 placeholder-gray-400"
                                 rows={4} autoFocus
                             />
                         )}
                         {modalState.type === 'late' && (
-                            <div className="flex items-center justify-center gap-4">
+                            <div className="flex items-center justify-center gap-4 py-2">
                                 <button onClick={() => setModalState(s => ({ ...s, value: Math.max(1, s.value - 5) }))}
-                                    className="w-10 h-10 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-lg">−</button>
-                                <div className="text-center">
+                                    className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">−</button>
+                                <div className="text-center w-24">
                                     <input type="number" value={modalState.value}
                                         onChange={e => setModalState(s => ({ ...s, value: Math.max(1, parseInt(e.target.value) || 1) }))}
-                                        className="w-20 text-center text-3xl font-bold text-amber-600 border-b-2 border-amber-300 outline-none bg-transparent"
+                                        className="w-full text-center text-4xl font-black text-amber-600 border-b-2 border-amber-300 outline-none bg-transparent pb-1"
                                         min={1}
                                     />
-                                    <p className="text-xs text-gray-400 mt-1">minutes</p>
+                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-2">minutes</p>
                                 </div>
                                 <button onClick={() => setModalState(s => ({ ...s, value: s.value + 5 }))}
-                                    className="w-10 h-10 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-lg">+</button>
+                                    className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">+</button>
                             </div>
                         )}
-                        <div className="flex gap-2">
+                        <div className="flex gap-3 pt-2">
                             <button onClick={confirmModal}
-                                className={`flex-1 py-2.5 text-white rounded-xl text-sm font-bold transition-colors ${
+                                className={`flex-1 py-3 text-white rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 ${
                                     modalState.type === 'absent' ? 'bg-red-500 hover:bg-red-600' :
                                     modalState.type === 'late'   ? 'bg-amber-500 hover:bg-amber-600' :
                                                                    'bg-blue-500 hover:bg-blue-600'
                                 }`}>Confirmer</button>
                             <button onClick={closeModal}
-                                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all active:scale-95">
                                 Annuler
                             </button>
                         </div>
@@ -240,12 +284,15 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
 
 const LoadingState = ({ className }: { className: string }) => (
     <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
-        <div className="bg-slate-800 p-4"><div className="h-5 bg-white/20 rounded w-48 animate-pulse" /></div>
-        <div className="p-5 space-y-3">
+        <div className="bg-slate-800 p-4"><div className="h-5 bg-white/20 rounded-lg w-48 animate-pulse" /></div>
+        <div className="p-5 space-y-4">
             {[1,2,3,4].map(i => (
                 <div key={i} className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 bg-gray-200 rounded flex-1 animate-pulse" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-gray-100 rounded-full w-1/3 animate-pulse" />
+                        <div className="h-2.5 bg-gray-50 rounded-full w-1/4 animate-pulse" />
+                    </div>
                 </div>
             ))}
         </div>
@@ -257,9 +304,9 @@ const ErrorState = ({ error, refetch, className }: { error: string; refetch: () 
         <div className="bg-red-600 p-4">
             <h3 className="text-white font-bold flex items-center gap-2"><AlertOctagon size={18} /> Erreur</h3>
         </div>
-        <div className="p-6 text-center">
-            <p className="text-gray-500 text-sm mb-4">{error}</p>
-            <button onClick={refetch} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-gray-100 transition-colors">
+        <div className="p-8 text-center bg-red-50/30">
+            <p className="text-gray-600 text-sm font-medium mb-5">{error}</p>
+            <button onClick={refetch} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 shadow-sm text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all active:scale-95">
                 <RefreshCw size={16} /> Réessayer
             </button>
         </div>
@@ -267,26 +314,24 @@ const ErrorState = ({ error, refetch, className }: { error: string; refetch: () 
 );
 
 const EmptyState = ({ nextSession, className }: { nextSession: any; className: string }) => (
-    <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`} dir="ltr">
-        <div className="bg-slate-800 p-4">
-            <h3 className="text-white font-bold flex items-center gap-2"><Clock size={18} className="text-orange-500" /> Session en cours</h3>
+    <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col items-center justify-center p-10 ${className}`} dir="ltr">
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100 shadow-inner">
+            <Clock size={28} className="text-gray-300" />
         </div>
-        <div className="p-8 text-center">
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Clock size={24} className="text-gray-400" />
-            </div>
-            <p className="font-semibold text-gray-700 mb-1">Aucune session en cours</p>
-            {nextSession ? (
-                <div className="mt-4 bg-orange-50 rounded-xl p-4 border border-orange-100 text-left">
-                    <p className="text-xs text-orange-600 font-semibold mb-1">Session suivante</p>
-                    <p className="text-sm font-bold text-gray-800">{nextSession.teacher}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{nextSession.subject} — {nextSession.class}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{fmt(nextSession.time_start)} - {fmt(nextSession.time_end)}</p>
+        <p className="font-bold text-gray-800 mb-1 text-lg">Aucune session en cours</p>
+        
+        {nextSession ? (
+            <div className="mt-6 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl p-5 border border-orange-100 w-full max-w-sm text-center shadow-sm">
+                <p className="text-[10px] uppercase tracking-widest text-orange-600 font-bold mb-3">Session suivante</p>
+                <p className="text-base font-black text-gray-900 leading-tight">{nextSession.teacher}</p>
+                <p className="text-sm font-semibold text-gray-600 mt-1">{nextSession.subject} <span className="text-gray-400 font-normal mx-1">—</span> {nextSession.class}</p>
+                <div className="mt-3 inline-block bg-white px-3 py-1.5 rounded-lg border border-orange-100 shadow-sm">
+                    <p className="text-xs font-mono font-bold text-orange-600">{fmt(nextSession.time_start)} - {fmt(nextSession.time_end)}</p>
                 </div>
-            ) : (
-                <p className="text-sm text-gray-400">Aucune autre session pour aujourd'hui</p>
-            )}
-        </div>
+            </div>
+        ) : (
+            <p className="text-sm font-medium text-gray-400 mt-2">Aucune autre session pour aujourd'hui</p>
+        )}
     </div>
 );
 

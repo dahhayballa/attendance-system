@@ -37,13 +37,13 @@ const StatisticsPage = () => {
         <SupervisorLayout>
             <div className="space-y-6">
                 {/* Header */}
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                        {t('supervisor.statisticsPage.title')}
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        {t('supervisor.statisticsPage.subtitle')}
-                    </p>
+                <div className="bg-white px-5 py-3 rounded-xl border border-gray-100 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-2 mb-4">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                            <span className="p-1.5 bg-blue-100 rounded-lg text-blue-500 text-lg leading-none">📊</span> 
+                            {t('supervisor.statisticsPage.title')}
+                        </h1>
+                    </div>
                 </div>
 
                 {/* Tabs */}

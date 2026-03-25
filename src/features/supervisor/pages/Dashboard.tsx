@@ -88,28 +88,29 @@ const Dashboard = () => {
             <div className={`space-y-6 pb-8 ${isRtl ? 'font-arabic' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
 
                 {/* ══ HERO CARD ══ */}
-                <div className="relative overflow-hidden rounded-2xl p-6 text-gray-900 bg-white border border-orange-100 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl p-4 text-gray-900 bg-white border border-orange-100 shadow-sm">
 
                     {/* Decorative glows */}
-                    <div className={`absolute top-0 ${isRtl ? 'left-0' : 'right-0'} w-64 h-64 rounded-full pointer-events-none`}
+                    <div className={`absolute top-0 ${isRtl ? 'left-0' : 'right-0'} w-48 h-48 rounded-full pointer-events-none`}
                         style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
-                    <div className={`absolute bottom-0 ${isRtl ? 'right-0' : 'left-0'} w-48 h-48 rounded-full pointer-events-none`}
+                    <div className={`absolute bottom-0 ${isRtl ? 'right-0' : 'left-0'} w-32 h-32 rounded-full pointer-events-none`}
                         style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
 
                     <div className="relative z-10 flex items-start justify-between">
                         <div>
-                            <p className="text-sm font-bold text-orange-500 uppercase tracking-widest">{getGreetingObj()}</p>
-                            <h1 className="text-2xl font-black mt-1 text-gray-900">
+                            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest">{getGreetingObj()}</p>
+                            <h1 className="text-xl font-black mt-1 text-gray-900 flex items-center gap-2">
+                                <span className="p-1.5 bg-orange-100 rounded-lg text-orange-500 text-lg leading-none">👋</span>
                                 {user?.name?.split(' ').slice(0, 2).join(' ') ?? t('supervisor.dashboard.supervisor')}
                             </h1>
-                            <p className="text-sm mt-1 capitalize font-medium text-gray-500">
+                            <p className="text-xs mt-1 capitalize font-medium text-gray-500">
                                 {getLocalizedDate(i18n.language)}
                             </p>
                         </div>
-                        <div className={`text-center rounded-xl px-4 py-3 flex-shrink-0 bg-orange-50 border border-orange-100 ${isRtl ? 'mr-4' : 'ml-4'}`}>
-                            <p className="text-2xl font-mono font-black tabular-nums text-gray-900">{timeStr}</p>
-                            <hr className="border-orange-100" />
-                            <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5 text-orange-600">{t('supervisor.dashboard.schoolName')}</p>
+                        <div className={`text-center rounded-lg px-3 py-2 flex-shrink-0 bg-orange-50 border border-orange-100 ${isRtl ? 'mr-4' : 'ml-4'}`}>
+                            <p className="text-lg font-mono font-black tabular-nums text-gray-900 leading-none">{timeStr}</p>
+                            <hr className="border-orange-100 my-1" />
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-orange-600">{t('supervisor.dashboard.schoolName')}</p>
                         </div>
                     </div>
 
@@ -205,7 +206,6 @@ const Dashboard = () => {
                     </div>
                 )}
 
-        
             </div>
         </SupervisorLayout>
     );

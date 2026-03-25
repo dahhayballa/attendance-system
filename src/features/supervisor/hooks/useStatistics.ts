@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 
 /* ═══════════ Types ═══════════ */
@@ -25,6 +25,13 @@ export interface ClassDistribution {
     total: number;
 }
 
+export interface SubjectDistribution {
+    subject: string;
+    present: number;
+    absent: number;
+    total: number;
+}
+
 export interface DailyTrend {
     day: string;
     present: number;
@@ -41,6 +48,7 @@ export interface StatisticsData {
     };
     topAbsentees: TopAbsentee[];
     byClass: ClassDistribution[];
+    bySubject: SubjectDistribution[];
     dailyTrend: DailyTrend[];
     loading: boolean;
     error: string | null;
@@ -58,6 +66,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
         byPeriod: { today: EMPTY_PERIOD, week: EMPTY_PERIOD, month: EMPTY_PERIOD },
         topAbsentees: [],
         byClass: [],
+        bySubject: [],
         dailyTrend: [],
         loading: true,
         error: null,
@@ -105,7 +114,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
 
             // ═══ Top absentees ═══
             const teacherMap = new Map<string, { absences: number; total: number }>();
-            schedules.forEach(s => {
+            todaySchedules.forEach(s => {
                 if (!s.teacher) return;
                 const entry = teacherMap.get(s.teacher) || { absences: 0, total: 0 };
                 entry.total++;
@@ -126,7 +135,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
 
             // ═══ Distribution par classe ═══
             const classMap = new Map<string, { present: number; absent: number; total: number }>();
-            schedules.forEach(s => {
+            todaySchedules.forEach(s => {
                 if (!s.class) return;
                 const entry = classMap.get(s.class) || { present: 0, absent: 0, total: 0 };
                 entry.total++;
@@ -137,6 +146,22 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
 
             const byClass = Array.from(classMap.entries())
                 .map(([cls, data]) => ({ class: cls, ...data }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 8);
+
+            // ═══ Distribution par matière ═══
+            const subjectMap = new Map<string, { present: number; absent: number; total: number }>();
+            todaySchedules.forEach(s => {
+                if (!s.subject) return;
+                const entry = subjectMap.get(s.subject) || { present: 0, absent: 0, total: 0 };
+                entry.total++;
+                if (s.status === 'present' || s.status === 'completed') entry.present++;
+                else if (s.status === 'absent') entry.absent++;
+                subjectMap.set(s.subject, entry);
+            });
+
+            const bySubject = Array.from(subjectMap.entries())
+                .map(([sub, data]) => ({ subject: sub, ...data }))
                 .sort((a, b) => b.total - a.total)
                 .slice(0, 8);
 
@@ -157,6 +182,7 @@ export const useStatistics = (): StatisticsData & { refetch: () => void } => {
                 byPeriod: { today, week, month },
                 topAbsentees,
                 byClass,
+                bySubject,
                 dailyTrend,
                 loading: false,
                 error: null,

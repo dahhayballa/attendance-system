@@ -31,7 +31,7 @@ interface StatisticsPanelProps {
 }
 
 const StatisticsPanel = ({ className = '', onTeacherClick }: StatisticsPanelProps) => {
-    const { overall, byPeriod, topAbsentees, byClass, dailyTrend, loading, error, refetch } = useStatistics();
+    const { overall, byPeriod, topAbsentees, byClass, bySubject, dailyTrend, loading, error, refetch } = useStatistics();
     const [activePeriod, setActivePeriod] = useState<'today' | 'week' | 'month'>('today');
 
     const currentPeriod = byPeriod[activePeriod];
@@ -181,6 +181,31 @@ const StatisticsPanel = ({ className = '', onTeacherClick }: StatisticsPanelProp
                 </div>
             )}
 
+            {/* ═══ Bar Chart — By Subject ═══ */}
+            {bySubject && bySubject.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                    <h4 className="text-xs font-bold text-gray-700 mb-3">الحضور حسب المادة (اليوم)</h4>
+                    <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={bySubject} layout="vertical" margin={{ left: 0, right: 10 }}>
+                                <XAxis type="number" tick={{ fontSize: 10 }} />
+                                <YAxis
+                                    type="category"
+                                    dataKey="subject"
+                                    width={80}
+                                    tick={{ fontSize: 10 }}
+                                />
+                                <Tooltip
+                                    contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                                />
+                                <Bar dataKey="present" name="حاضر" fill={COLORS.present} radius={[0, 4, 4, 0]} barSize={12} />
+                                <Bar dataKey="absent" name="غائب" fill={COLORS.absent} radius={[0, 4, 4, 0]} barSize={12} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
+
             {/* ═══ Line Chart — Daily Trend ═══ */}
             {dailyTrend.length > 1 && (
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
@@ -221,7 +246,7 @@ const StatisticsPanel = ({ className = '', onTeacherClick }: StatisticsPanelProp
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
                         <AlertTriangle size={14} className="text-red-500" />
-                        <h4 className="text-xs font-bold text-red-700">أكثر الأساتذة غياباً</h4>
+                        <h4 className="text-xs font-bold text-red-700">الأساتذة الغائبون (اليوم)</h4>
                     </div>
                     <div className="divide-y divide-gray-50">
                         {topAbsentees.map((t, i) => (

@@ -12,7 +12,6 @@ import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
 
 // Attendance Sub-pages
-import AttendanceRecordPage from '../features/supervisor/pages/attendance/AttendanceRecordPage';
 import AttendanceRecordsPage from '../features/supervisor/pages/attendance/AttendanceRecordsPage';
 import TeacherProfilesPage from '../features/supervisor/pages/attendance/TeacherProfilesPage';
 import AttendanceCalendarPage from '../features/supervisor/pages/attendance/AttendanceCalendarPage';
@@ -105,14 +104,6 @@ export const Router = () => {
             />
 
             {/* Attendance Routes */}
-            <Route
-                path="/supervisor/attendance"
-                element={
-                    <ProtectedRoute requireRole="supervisor">
-                        <AttendanceRecordPage />
-                    </ProtectedRoute>
-                }
-            />
             <Route
                 path="/supervisor/attendance/records"
                 element={

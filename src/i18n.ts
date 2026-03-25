@@ -7,10 +7,16 @@ const resources = {
     translation: {
       common: {
         systemName: 'نظام الرقابة المتقدم',
+        systemSubtitle: 'نظام إدارة الحضور',
         loading: 'جاري التحميل...',
         verifyingSession: 'جاري التحقق من الجلسة...',
         language: 'اللغة',
         userAccount: 'حساب المستخدم',
+        navNavigation: 'التنقل',
+        navAnalysis: 'التحليل',
+        navSystem: 'النظام',
+        navDashboard: 'لوحة التحكم',
+        navManagement: 'الإدارة'
       },
       auth: {
         loginTitle: 'تسجيل الدخول',
@@ -233,10 +239,16 @@ const resources = {
     translation: {
       common: {
         systemName: 'Système avancé de contrôle',
+        systemSubtitle: 'Système de présence',
         loading: 'Chargement...',
         verifyingSession: 'Vérification de la session en cours...',
         language: 'Langue',
         userAccount: 'Compte utilisateur',
+        navNavigation: 'NAVIGATION',
+        navAnalysis: 'ANALYSE',
+        navSystem: 'SYSTÈME',
+        navDashboard: 'TABLEAU DE BORD',
+        navManagement: 'GESTION'
       },
       auth: {
         loginTitle: 'Connexion',

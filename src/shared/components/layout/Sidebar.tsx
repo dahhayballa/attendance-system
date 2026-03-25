@@ -1,41 +1,43 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-    Home, ClipboardList, BarChart3, Settings,
+    Home, BarChart3, Settings,
     LayoutDashboard, Activity, Shield, FileText,
-    X, ChevronRight, LogOut
+    X, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 interface SidebarProps { isOpen: boolean; onClose: () => void; }
 
-const SUPERVISOR_NAV = [
-    { section: 'NAVIGATION', items: [
-        { id: 'home',       label: 'Accueil',         icon: Home,          path: '/supervisor'                   },
-        { id: 'attendance', label: 'Enregistrement',  icon: ClipboardList, path: '/supervisor/attendance'        },
-    ]},
-    { section: 'ANALYSE', items: [
-        { id: 'records',    label: 'Historique',      icon: FileText,      path: '/supervisor/attendance/records' },
-        { id: 'statistics', label: 'Statistiques',    icon: BarChart3,     path: '/supervisor/statistics'        },
-    ]},
-    { section: 'SYSTÈME', items: [
-        { id: 'settings',   label: 'Paramètres',      icon: Settings,      path: '/supervisor/settings'          },
-    ]},
-];
-
-const ADMIN_NAV = [
-    { section: 'TABLEAU DE BORD', items: [
-        { id: 'dashboard',   label: 'Vue d\'ensemble',    icon: LayoutDashboard, path: '/admin'            },
-        { id: 'live',        label: 'Suivi en direct',    icon: Activity,        path: '/admin/live'       },
-    ]},
-    { section: 'GESTION', items: [
-        { id: 'supervisors', label: 'Superviseurs',        icon: Shield,          path: '/admin/supervisors'},
-        { id: 'reports',     label: 'Rapports',            icon: FileText,        path: '/admin/reports'   },
-    ]},
-];
-
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
-    const { userRole, logout, user } = useAuth();
+    const { userRole } = useAuth();
     const location = useLocation();
+    const { t } = useTranslation();
+
+    const SUPERVISOR_NAV = [
+        { section: t('common.navNavigation'), items: [
+            { id: 'home',       label: t('supervisor.sidebar.home'),         icon: Home,          path: '/supervisor'                   },
+        ]},
+        { section: t('common.navAnalysis'), items: [
+            { id: 'records',    label: t('supervisor.sidebar.attendanceRecords'),      icon: FileText,      path: '/supervisor/attendance/records' },
+            { id: 'statistics', label: t('supervisor.sidebar.statistics'),    icon: BarChart3,     path: '/supervisor/statistics'        },
+        ]},
+        { section: t('common.navSystem'), items: [
+            { id: 'settings',   label: t('supervisor.sidebar.settings'),      icon: Settings,      path: '/supervisor/settings'          },
+        ]},
+    ];
+
+    const ADMIN_NAV = [
+        { section: t('common.navDashboard'), items: [
+            { id: 'dashboard',   label: t('admin.sidebar.dashboard'),    icon: LayoutDashboard, path: '/admin'            },
+            { id: 'live',        label: t('admin.sidebar.liveDashboard'),    icon: Activity,        path: '/admin/live'       },
+        ]},
+        { section: t('common.navManagement'), items: [
+            { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},
+            { id: 'reports',     label: t('admin.sidebar.reports'),            icon: FileText,        path: '/admin/reports'   },
+        ]},
+    ];
+
     const nav = userRole === 'admin' ? ADMIN_NAV : SUPERVISOR_NAV;
 
     const isActive = (path: string) => {
@@ -51,12 +53,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 onClick={onClose}
             />
             <aside
-                dir="ltr"
                 className={`
-                    fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white
-                    transform transition-transform duration-300 ease-in-out border-r border-gray-100
-                    lg:translate-x-0 lg:static
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                    fixed inset-y-0 ltr:left-0 rtl:right-0 z-50 w-64 flex flex-col bg-white
+                    transform transition-transform duration-300 ease-in-out ltr:border-r rtl:border-l border-gray-100
+                    lg:!translate-x-0 lg:static
+                    ${isOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'}
                 `}
                 style={{
                     boxShadow: isOpen ? '4px 0 24px rgba(0,0,0,0.1)' : 'none',
@@ -76,30 +77,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         </div>
                         <div>
                             <p className="font-black text-base leading-none text-gray-900">EETFP-MPG</p>
-                            <p className="text-xs mt-0.5 font-medium text-orange-600">Système de présence</p>
+                            <p className="text-xs mt-0.5 font-medium text-orange-600">{t('common.systemSubtitle')}</p>
                         </div>
                     </div>
                     <button onClick={onClose}
                         className="lg:hidden p-1.5 rounded-lg transition-colors text-gray-400 hover:text-gray-900 hover:bg-gray-100">
                         <X size={17} />
                     </button>
-                </div>
-
-                {/* ── User card ── */}
-                <div className="mx-3 mt-4 px-3 py-3 rounded-xl flex-shrink-0 bg-orange-50 border border-orange-100">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm">
-                            {(user?.name || user?.email || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-xs font-bold truncate text-gray-900">
-                                {user?.name || user?.email?.split('@')[0]}
-                            </p>
-                            <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5 text-orange-600">
-                                {userRole === 'admin' ? 'Administrateur' : 'Superviseur'}
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 {/* ── Navigation ── */}
@@ -127,7 +111,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                             <span className={`flex-1 text-sm ${active ? 'font-bold' : 'font-medium'}`}>
                                                 {item.label}
                                             </span>
-                                            {active && <ChevronRight size={13} className="text-orange-500" />}
+                                            {active && <ChevronRight size={13} className="text-orange-500 rtl:rotate-180" />}
                                         </NavLink>
                                     );
                                 })}
@@ -136,18 +120,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     ))}
                 </nav>
 
-                {/* ── Logout ── */}
-                <div className="p-3 flex-shrink-0 border-t border-gray-100">
-                    <button onClick={() => logout()}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 border border-transparent hover:bg-red-50 hover:text-red-700 hover:border-red-100 text-gray-500 group">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100 group-hover:bg-red-100 transition-colors">
-                            <LogOut size={15} className="text-gray-400 group-hover:text-red-600" />
-                        </div>
-                        <span className="text-sm font-medium">
-                            Déconnexion
-                        </span>
-                    </button>
-                </div>
             </aside>
         </>
     );

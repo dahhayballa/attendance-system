@@ -5,7 +5,7 @@ import { Search, MapPin, Filter, User, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 // --- COMPOSANT SOUS-JACENT POUR UNE GRILLE UNIQUE ---
-const ClassTimetable = ({ title, schedules, activeDays, timePosFn, HOUR_HEIGHT, HOURS }: any) => {
+const ClassTimetable = ({ title, schedules, activeDays, timePosFn, HOUR_HEIGHT, HOURS, t }: any) => {
     // Regrouper par jour
     const grouped = new Map<string, any[]>();
     activeDays.forEach((d: string) => grouped.set(d, []));
@@ -23,7 +23,7 @@ const ClassTimetable = ({ title, schedules, activeDays, timePosFn, HOUR_HEIGHT, 
             <div className="flex items-center gap-2 mb-3 bg-orange-50/50 px-3 py-2 rounded-lg border border-orange-100 w-max">
                 <Layers size={16} className="text-orange-500" />
                 <h2 className="text-sm font-black text-slate-800 tracking-tight">
-                    Emploi du temps: <span className="text-orange-600 bg-white px-2 py-0.5 rounded shadow-sm border border-orange-200 ml-1">{title}</span>
+                    {t('supervisor.timetablePage.titleSection')} <span className="text-orange-600 bg-white px-2 py-0.5 rounded shadow-sm border border-orange-200 ml-1">{title}</span>
                 </h2>
             </div>
 
@@ -36,7 +36,7 @@ const ClassTimetable = ({ title, schedules, activeDays, timePosFn, HOUR_HEIGHT, 
                         {activeDays.map((day: string) => (
                             <div key={day} className="flex-1 px-2 py-2 text-center border-r border-gray-100 last:border-r-0">
                                 <h3 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">
-                                    {day}
+                                    {t(`supervisor.timetablePage.days.${day}`)}
                                 </h3>
                             </div>
                         ))}
@@ -160,7 +160,7 @@ const ClassTimetable = ({ title, schedules, activeDays, timePosFn, HOUR_HEIGHT, 
 
 // --- PAGE PRINCIPALE ---
 export const TimetablePage = () => {
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
     const isRtl = i18n.language === 'ar';
 
     const [schedules, setSchedules] = useState<any[]>([]);
@@ -172,6 +172,7 @@ export const TimetablePage = () => {
         return jsDays[new Date().getDay()] || 'Lundi';
     });
     const [searchTeacher, setSearchTeacher] = useState('');
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     useEffect(() => {
         const fetchSchedules = async () => {
@@ -218,47 +219,53 @@ export const TimetablePage = () => {
             <div className={`space-y-4 pb-12 ${isRtl ? 'font-arabic text-right' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
                 
                 {/* EN-TÊTE ET FILTRES RAPIDES */}
-                <div className="bg-white px-5 py-3 rounded-xl border border-gray-100 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-2">
-                    <div>
+                <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-xl border border-gray-100 shadow-sm flex flex-col xl:flex-row xl:items-start justify-between gap-4 mt-2 -mx-2 px-6">
+                    <div className="flex justify-between items-center w-full xl:w-auto">
                         <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                             <span className="p-1.5 bg-orange-100 rounded-lg text-orange-500 text-lg leading-none">🗓</span> 
-                            Emploi du temps
+                            {t('supervisor.timetablePage.title')}
                         </h1>
+                        <button 
+                            onClick={() => setShowMobileFilters(!showMobileFilters)} 
+                            className="xl:hidden flex items-center justify-center gap-2 py-1.5 px-3 bg-slate-50 border border-gray-200 text-xs font-bold text-gray-600 rounded-lg hover:bg-gray-100 shadow-sm transition-colors"
+                        >
+                            <Filter size={14} className={showMobileFilters ? "text-orange-500" : "text-gray-400"} />
+                        </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-2 w-full xl:w-auto">
+                    <div className={`flex-col md:flex-row gap-2 w-full xl:w-auto ${showMobileFilters ? 'flex' : 'hidden xl:flex'}`}>
                         {uniqueClasses.length > 0 && (
                             <div className="relative flex-1">
                                 <select 
                                     value={filterClass} onChange={(e) => setFilterClass(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 appearance-none shadow-sm cursor-pointer"
+                                    className="w-full rtl:pr-8 rtl:pl-3 ltr:pl-8 ltr:pr-3 py-2 bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 appearance-none shadow-sm cursor-pointer text-start"
                                 >
-                                    <option value="all">Toutes Classes</option>
+                                    <option value="all">{t('supervisor.timetablePage.allClasses')}</option>
                                     {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
-                                <div className="absolute right-3 top-2.5 text-xs text-orange-500 pointer-events-none">▼</div>
+                                <div className="absolute rtl:left-3 ltr:right-3 top-2.5 text-xs text-orange-500 pointer-events-none">▼</div>
                             </div>
                         )}
 
                         <div className="relative flex-1">
                             <select 
                                 value={filterDay} onChange={(e) => setFilterDay(e.target.value)}
-                                className="w-full pl-3 pr-8 py-2 bg-orange-50 border border-orange-200 text-sm font-bold text-orange-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 appearance-none shadow-sm cursor-pointer"
+                                className="w-full rtl:pr-8 rtl:pl-3 ltr:pl-8 ltr:pr-3 py-2 bg-orange-50 border border-orange-200 text-sm font-bold text-orange-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 appearance-none shadow-sm cursor-pointer text-start"
                             >
-                                <option value="all">Toute la semaine</option>
-                                {DAYS_ORDER.map(d => <option key={d} value={d}>{d}</option>)}
+                                <option value="all">{t('supervisor.timetablePage.wholeWeek')}</option>
+                                {DAYS_ORDER.map(d => <option key={d} value={d}>{t(`supervisor.timetablePage.days.${d}`)}</option>)}
                             </select>
-                            <div className="absolute right-3 top-2.5 text-xs text-orange-500 pointer-events-none">▼</div>
+                            <div className="absolute rtl:left-3 ltr:right-3 top-2.5 text-xs text-orange-500 pointer-events-none">▼</div>
                         </div>
 
                         <div className="relative flex-1">
-                            <Search className="absolute left-2.5 top-2 text-gray-400" size={16} />
+                            <Search className="absolute rtl:right-2.5 ltr:left-2.5 top-2 text-gray-400" size={16} />
                             <input
                                 type="text"
-                                placeholder="Prof ou Matière..."
+                                placeholder={t('supervisor.timetablePage.searchPlaceholder')}
                                 value={searchTeacher}
                                 onChange={(e) => setSearchTeacher(e.target.value)}
-                                className="pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 text-sm font-medium rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 w-full shadow-sm"
+                                className="rtl:pr-8 rtl:pl-3 ltr:pl-8 ltr:pr-3 py-2 bg-slate-50 border border-slate-200 text-sm font-medium rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 w-full shadow-sm text-start"
                             />
                         </div>
                     </div>
@@ -266,13 +273,13 @@ export const TimetablePage = () => {
 
                 {loading ? (
                     <div className="h-[400px] bg-white rounded-2xl animate-pulse border border-slate-100 flex items-center justify-center">
-                        <p className="text-slate-400 font-bold">Chargement de la grille...</p>
+                        <p className="text-slate-400 font-bold">{t('supervisor.timetablePage.loadingGrid')}</p>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-sm">
                         <Filter size={40} className="mx-auto text-gray-300 mb-6" />
-                        <h3 className="text-xl font-black text-gray-800 mb-2">Aucun cours</h3>
-                        <p className="text-gray-500 font-medium">L'emploi du temps est vide pour ces filtres.</p>
+                        <h3 className="text-xl font-black text-gray-800 mb-2">{t('supervisor.timetablePage.noCourses')}</h3>
+                        <p className="text-gray-500 font-medium">{t('supervisor.timetablePage.emptyTimetable')}</p>
                     </div>
                 ) : (
                     <div className="mt-6 space-y-6">
@@ -285,6 +292,7 @@ export const TimetablePage = () => {
                                 timePosFn={getTimePos}
                                 HOUR_HEIGHT={HOUR_HEIGHT}
                                 HOURS={HOURS}
+                                t={t}
                             />
                         ))}
                     </div>

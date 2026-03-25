@@ -17,10 +17,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const SUPERVISOR_NAV = [
         { section: t('common.navNavigation'), items: [
             { id: 'home',       label: t('supervisor.sidebar.home'),         icon: Home,          path: '/supervisor'                   },
-            { id: 'history',    label: t('supervisor.sidebar.history', 'Historique'), icon: History,      path: '/supervisor/history'           },
+            { id: 'history',    label: t('supervisor.sidebar.history'), icon: History,      path: '/supervisor/history'           },
         ]},
         { section: t('common.navAnalysis'), items: [
-            { id: 'timetable',  label: 'Emplois du temps',        icon: Calendar,      path: '/supervisor/timetable' },
+            { id: 'timetable',  label: t('supervisor.sidebar.timetable'),        icon: Calendar,      path: '/supervisor/timetable' },
             { id: 'statistics', label: t('supervisor.sidebar.statistics'),    icon: BarChart3,     path: '/supervisor/statistics'        },
         ]},
         { section: t('common.navSystem'), items: [

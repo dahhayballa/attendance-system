@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginPage from '../features/auth/pages/LoginPage';
 import AdminDashboard from '../features/admin/pages/AdminDashboard';
@@ -7,12 +7,13 @@ import SupervisorAssignmentsPage from '../features/admin/pages/SupervisorAssignm
 import LiveDashboardPage from '../features/admin/pages/LiveDashboardPage';
 import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
 import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
+import ActionHistoryPage from '../features/supervisor/pages/ActionHistoryPage';
 import StatisticsPage from '../features/supervisor/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
 
 // Attendance Sub-pages
-import AttendanceRecordsPage from '../features/supervisor/pages/attendance/AttendanceRecordsPage';
+import TimetablePage from '../features/supervisor/pages/TimetablePage';
 import TeacherProfilesPage from '../features/supervisor/pages/attendance/TeacherProfilesPage';
 import AttendanceCalendarPage from '../features/supervisor/pages/attendance/AttendanceCalendarPage';
 import AbsentListPage from '../features/supervisor/pages/attendance/AbsentListPage';
@@ -95,6 +96,14 @@ export const Router = () => {
                 }
             />
             <Route
+                path="/supervisor/history"
+                element={
+                    <ProtectedRoute requireRole="supervisor">
+                        <ActionHistoryPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/supervisor/statistics"
                 element={
                     <ProtectedRoute requireRole="supervisor">
@@ -105,10 +114,10 @@ export const Router = () => {
 
             {/* Attendance Routes */}
             <Route
-                path="/supervisor/attendance/records"
+                path="/supervisor/timetable"
                 element={
                     <ProtectedRoute requireRole="supervisor">
-                        <AttendanceRecordsPage />
+                        <TimetablePage />
                     </ProtectedRoute>
                 }
             />

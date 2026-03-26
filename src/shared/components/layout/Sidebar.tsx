@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     Home, BarChart3, Settings,
     LayoutDashboard, Activity, Shield, FileText,
-    X, ChevronRight
+    X, ChevronRight, History, Calendar
 } from 'lucide-react';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -17,9 +17,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const SUPERVISOR_NAV = [
         { section: t('common.navNavigation'), items: [
             { id: 'home',       label: t('supervisor.sidebar.home'),         icon: Home,          path: '/supervisor'                   },
+            { id: 'history',    label: t('supervisor.sidebar.history'), icon: History,      path: '/supervisor/history'           },
         ]},
         { section: t('common.navAnalysis'), items: [
-            { id: 'records',    label: t('supervisor.sidebar.attendanceRecords'),      icon: FileText,      path: '/supervisor/attendance/records' },
+            { id: 'timetable',  label: t('supervisor.sidebar.timetable'),        icon: Calendar,      path: '/supervisor/timetable' },
             { id: 'statistics', label: t('supervisor.sidebar.statistics'),    icon: BarChart3,     path: '/supervisor/statistics'        },
         ]},
         { section: t('common.navSystem'), items: [

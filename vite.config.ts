@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false
+      },
       includeAssets: ['icons/*.png', 'logo-mpg.png'],
       manifest: {
         name: 'EETFP-MPG Présence',

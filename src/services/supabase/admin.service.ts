@@ -182,7 +182,7 @@ export const adminService = {
     const scheduleIds = todaySchedules.map(s => s.id);
     if (scheduleIds.length === 0) return [];
 
-    // 2. جلب السجلات لهذه الحصص (حالة غياب أو تأخر فقط)
+    // 2. جلب السجلات لهذه الحصص (حالة غياب أو تأخر أو حضور)
     const { data: logsData, error: logsError } = await supabase
       .from('attendance_logs')
       .select(`
@@ -194,7 +194,7 @@ export const adminService = {
         user:users!attendance_logs_recorded_by_fkey(name, email)
       `)
       .in('schedule_id', scheduleIds)
-      .in('status', ['absent', 'late'])
+      .in('status', ['absent', 'late', 'present'])
       .order('recorded_at', { ascending: false });
 
     if (logsError) throw logsError;
@@ -238,7 +238,6 @@ export const adminService = {
           assigned_supervisors: Array.from(new Set(assignedSupervisors)).join(', ') || 'Non assigné'
         });
         seenSchedules.add(log.schedule_id);
-        if (uniqueLogs.length >= 20) break;
       }
     }
 

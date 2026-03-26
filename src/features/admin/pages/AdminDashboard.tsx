@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { WeekUploader } from '../components/WeekUploader';
 import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Loader2, Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import {  Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 import { Layout } from '../../../shared/components/layout/Layout';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, recorded: 0, rate: 0 });
   const [weeks, setWeeks] = useState<any[]>([]);
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [,setRecentLogs] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<{ topTeachers: any[], topClasses: any[] }>({ topTeachers: [], topClasses: [] });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();

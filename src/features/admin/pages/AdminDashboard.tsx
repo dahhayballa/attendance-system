@@ -2,27 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { WeekUploader } from '../components/WeekUploader';
 import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Loader2, Trash2, Calendar, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 import { Layout } from '../../../shared/components/layout/Layout';
 
 export const AdminDashboard: React.FC = () => {
-  const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, rate: 0 });
+  const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, recorded: 0, rate: 0 });
   const [weeks, setWeeks] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<{ topTeachers: any[], topClasses: any[] }>({ topTeachers: [], topClasses: [] });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsData, weeksData, logsData] = await Promise.all([
+      const [statsData, weeksData, logsData, analyticsData] = await Promise.all([
         adminService.getGlobalStats(),
         adminService.getWeeksWithCounts(),
-        adminService.getRecentLogs()
+        adminService.getRecentLogs(),
+        adminService.getAbsenceAnalytics()
       ]);
-      setStats(statsData);
+      setStats(statsData as any);
       setWeeks(weeksData);
       setRecentLogs(logsData);
+      setAnalytics(analyticsData);
     } catch (error) {
       toast.error("Échec du chargement des données du tableau de bord");
     } finally {
@@ -30,9 +33,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  useEffect(() => { loadDashboardData(); }, []);
 
   const handleDeleteWeek = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette semaine ?")) return;
@@ -45,127 +46,281 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const progressPercent = stats.total > 0 ? Math.round((stats.recorded / stats.total) * 100) : 0;
+
   return (
     <Layout>
-      <div className="space-y-8" dir="ltr">
-        {/* Header & Stats */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord Administrateur</h1>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={loadDashboardData} 
-              className="p-2 text-gray-500 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all shadow-sm bg-white border border-gray-100" 
-              title="Rafraîchir les données"
-            >
-              <Loader2 className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+      <div className="space-y-6 pb-8" dir="ltr">
+
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
+              Tableau de Bord
+            </h1>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">Vue d'ensemble de la présence</p>
+          </div>
+          <button
+            onClick={loadDashboardData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all text-xs font-bold shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </button>
+        </div>
+
+        {/* ── Stat Cards ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+          <StatCard
+            title="Total Séances"
+            value={stats.total}
+            icon={<Calendar size={16} />}
+            accent="orange"
+          />
+          <StatCard
+            title="Présents"
+            value={stats.present}
+            icon={<CheckCircle size={16} />}
+            accent="green"
+          />
+          <StatCard
+            title="Absents"
+            value={stats.absent}
+            icon={<XCircle size={16} />}
+            accent="red"
+          />
+          <StatCard
+            title="En Retard"
+            value={stats.late || 0}
+            icon={<Clock size={16} />}
+            accent="amber"
+          />
+          <StatCard
+            title="Taux Présence"
+            value={`${stats.rate}%`}
+            icon={<TrendingUp size={16} />}
+            accent="blue"
+            className="col-span-2 sm:col-span-1"
+          />
+        </div>
+
+        {/* ── Progress Bar ── */}
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-500" />
+              <span className="text-sm font-bold text-gray-800">Progression des Enregistrements</span>
+            </div>
+            <span className="text-xs font-black text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1 rounded-lg">
+              {stats.recorded} / {stats.total} séances
+            </span>
+          </div>
+
+          <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">
+              Taux d'achèvement global
+            </span>
+            <span className="text-xs font-black text-orange-500">{progressPercent}%</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard title="Total Séances" value={stats.total} icon={<Calendar className="text-orange-500" />} color="border-orange-500" bg="bg-orange-50" />
-          <StatCard title="Présents" value={stats.present} icon={<CheckCircle className="text-green-500" />} color="border-green-500" bg="bg-green-50" />
-          <StatCard title="Absents" value={stats.absent} icon={<XCircle className="text-red-500" />} color="border-red-500" bg="bg-red-50" />
-          <StatCard title="Taux de Présence" value={`${stats.rate}%`} icon={<Users className="text-blue-500" />} color="border-blue-500" bg="bg-blue-50" />
+        {/* ── Zones de Risques (Absences) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           {/* Top Teachers Absences */}
+           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+                 <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-red-500" />
+                    <span className="font-bold text-gray-800 text-sm">Professeurs (Récurrence d'absence)</span>
+                 </div>
+                 <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-md font-bold uppercase border border-red-100">Top 5</span>
+              </div>
+              <div className="p-5 flex-1 space-y-4">
+                 {analytics.topTeachers.length > 0 ? (
+                    analytics.topTeachers.map((teacher, idx) => (
+                       <div key={idx} className="group">
+                          <div className="flex justify-between items-end mb-1.5">
+                             <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors uppercase tracking-tight">{teacher.name}</span>
+                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg">{teacher.count} <span className="text-[10px] opacity-70">absences</span></span>
+                          </div>
+                          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                             <div 
+                                className="h-full bg-red-500 rounded-full transition-all duration-1000 group-hover:bg-orange-500 shadow-sm"
+                                style={{ width: `${Math.min((teacher.count / 5) * 100, 100)}%` }}
+                             />
+                          </div>
+                       </div>
+                    ))
+                 ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">Aucune absence enregistrée.</div>
+                 )}
+              </div>
+           </div>
+
+           {/* Top Classes Absences */}
+           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+                 <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-orange-500" />
+                    <span className="font-bold text-gray-800 text-sm">Classes Impactées (Absences Profs)</span>
+                 </div>
+                 <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md font-bold uppercase border border-orange-100">Top 5</span>
+              </div>
+              <div className="p-5 flex-1 space-y-4">
+                 {analytics.topClasses.length > 0 ? (
+                    analytics.topClasses.map((cl, idx) => (
+                       <div key={idx} className="group">
+                          <div className="flex justify-between items-end mb-1.5">
+                             <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{cl.name}</span>
+                             <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">{cl.count} <span className="text-[10px] opacity-70">séances perdues</span></span>
+                          </div>
+                          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                             <div 
+                                className="h-full bg-orange-500 rounded-full transition-all duration-1000 group-hover:bg-red-500 shadow-sm"
+                                style={{ width: `${Math.min((cl.count / 10) * 100, 100)}%` }}
+                             />
+                          </div>
+                       </div>
+                    ))
+                 ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">Aucun impact constaté.</div>
+                 )}
+              </div>
+           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* File Upload & Recent Activity */}
-          <div className="space-y-6">
+        {/* ── Week Uploader ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500" />
+            <span className="font-bold text-gray-800 text-sm">Importer un emploi du temps</span>
+          </div>
+          <div className="p-5">
             <WeekUploader onUploadComplete={loadDashboardData} />
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-orange-500" /> Activité Récente
-              </h2>
-              <div className="space-y-3">
-                {recentLogs.map((log: any) => (
-                  <div key={log.id} className="text-sm p-4 bg-gray-50/50 rounded-xl border-l-4 border-orange-400 hover:bg-orange-50/50 transition-colors">
-                    <div className="flex justify-between font-bold text-gray-900">
-                      <span>{log.schedule?.teacher}</span>
-                      <span className={log.status === 'present' ? 'text-green-600' : 'text-red-600'}>
-                        {log.status === 'present' ? 'Présent' : 'Absent'}
-                      </span>
-                    </div>
-                    <div className="text-gray-500 text-xs mt-1.5 flex justify-between">
-                      <span>{log.schedule?.class}</span>
-                      <span className="font-medium">{new Date(log.recorded_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  </div>
-                ))}
-                {recentLogs.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 text-sm">Aucune activité enregistrée</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Weeks Table */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <span className="font-bold text-gray-800">Emplois du temps importés</span>
-                <span className="bg-orange-100 text-orange-700 text-[10px] px-2.5 py-1 rounded-md uppercase tracking-wider font-bold">Data Storage</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-                    <tr>
-                      <th className="p-4 font-bold">Semaine</th>
-                      <th className="p-4 font-bold">Date de début</th>
-                      <th className="p-4 font-bold text-center">Séances</th>
-                      <th className="p-4 font-bold text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {weeks.map((week) => (
-                      <tr key={week.id} className="hover:bg-orange-50/30 transition-colors">
-                        <td className="p-4 font-bold text-gray-900">{week.name}</td>
-                        <td className="p-4 text-sm font-medium text-gray-600">{new Date(week.start_date).toLocaleDateString('fr-FR')}</td>
-                        <td className="p-4 text-center">
-                          <span className="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-xs">
-                            {week.schedules?.[0]?.count || 0}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <button 
-                            onClick={() => handleDeleteWeek(week.id)} 
-                            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all"
-                            title="Supprimer la semaine"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {weeks.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-8 text-center text-gray-400 text-sm">
-                          Aucun emploi du temps importé
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* ── Weeks Table ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2">
+            <span className="font-bold text-gray-800 text-sm">Emplois du temps importés</span>
+            <span className="bg-orange-50 text-orange-600 text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-wider font-bold border border-orange-100">
+              {weeks.length} semaine{weeks.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Mobile cards (< md) */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {weeks.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 text-sm">Aucun emploi du temps importé</div>
+            ) : (
+              weeks.map((week) => (
+                <div key={week.id} className="p-4 flex items-center justify-between gap-3 hover:bg-orange-50/30 transition-colors">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-900 text-sm truncate">{week.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {new Date(week.start_date).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="bg-gray-100 text-gray-700 font-bold px-2.5 py-1 rounded-lg text-xs">
+                      {week.schedules?.[0]?.count || 0} séances
+                    </span>
+                    <button
+                      onClick={() => handleDeleteWeek(week.id)}
+                      className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table (≥ md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="px-5 py-3 font-bold">Semaine</th>
+                  <th className="px-5 py-3 font-bold">Date de début</th>
+                  <th className="px-5 py-3 font-bold text-center">Séances</th>
+                  <th className="px-5 py-3 font-bold text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {weeks.map((week) => (
+                  <tr key={week.id} className="hover:bg-orange-50/20 transition-colors">
+                    <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{week.name}</td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 font-medium">
+                      {new Date(week.start_date).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span className="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-xs">
+                        {week.schedules?.[0]?.count || 0}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <button
+                        onClick={() => handleDeleteWeek(week.id)}
+                        className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {weeks.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-10 text-center text-gray-400 text-sm">
+                      Aucun emploi du temps importé
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </Layout>
   );
 };
 
-const StatCard = ({ title, value, icon, color, bg }: any) => (
-  <div className={`bg-white p-6 rounded-2xl shadow-sm border-l-4 ${color} flex items-center justify-between hover:shadow-md transition-all group`}>
-    <div>
-      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{title}</p>
-      <p className="text-3xl font-black text-gray-900 tracking-tight">{value}</p>
+// ── Stat Card ──────────────────────────────────────────────────────────────
+const ACCENT_MAP: Record<string, { border: string; icon: string; bg: string; text: string }> = {
+  orange: { border: 'border-l-orange-500', icon: 'bg-orange-100 text-orange-600', bg: '', text: '' },
+  green:  { border: 'border-l-green-500',  icon: 'bg-green-100 text-green-600',   bg: '', text: '' },
+  red:    { border: 'border-l-red-500',    icon: 'bg-red-100 text-red-500',       bg: '', text: '' },
+  amber:  { border: 'border-l-amber-500',  icon: 'bg-amber-100 text-amber-600',   bg: '', text: '' },
+  blue:   { border: 'border-l-blue-500',   icon: 'bg-blue-100 text-blue-600',     bg: '', text: '' },
+};
+
+const StatCard = ({
+  title, value, icon, accent, className = '',
+}: { title: string; value: string | number; icon: React.ReactNode; accent: string; className?: string }) => {
+  const a = ACCENT_MAP[accent] || ACCENT_MAP.orange;
+  return (
+    <div className={`bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 border-l-4 ${a.border} shadow-sm hover:shadow-md transition-all flex items-center gap-3 sm:gap-4 ${className}`}>
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${a.icon}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">{title}</p>
+        <p className="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-0.5">{value}</p>
+      </div>
     </div>
-    <div className={`p-4 ${bg} rounded-2xl group-hover:scale-110 transition-transform duration-300`}>{icon}</div>
-  </div>
-);
+  );
+};
 
 export default AdminDashboard;

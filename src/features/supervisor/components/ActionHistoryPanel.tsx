@@ -21,7 +21,7 @@ interface ActionLog {
 
 export const ActionHistoryPanel = ({ className = '' }: { className?: string }) => {
     const { user } = useAuth();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     
     const [logs, setLogs] = useState<ActionLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -95,11 +95,11 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
 
     const getStatusConfig = (status: string) => {
         switch (status) {
-            case 'present': return { icon: CheckCircle, text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: t('supervisor.actionHistoryPanel.present') };
-            case 'absent':  return { icon: XCircle, text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: t('supervisor.actionHistoryPanel.absent') };
-            case 'late':    return { icon: AlertTriangle, text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', label: t('supervisor.actionHistoryPanel.late') };
-            case 'excused': return { icon: MessageSquare, text: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200', label: t('supervisor.actionHistoryPanel.excused') };
-            default:        return { icon: Clock, text: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', label: status };
+            case 'present': return { icon: CheckCircle, text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', label: t('supervisor.actionHistoryPanel.present') };
+            case 'absent':  return { icon: XCircle, text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100', label: t('supervisor.actionHistoryPanel.absent') };
+            case 'late':    return { icon: AlertTriangle, text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', label: t('supervisor.actionHistoryPanel.late') };
+            case 'excused': return { icon: MessageSquare, text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-100', label: t('supervisor.actionHistoryPanel.excused') };
+            default:        return { icon: Clock, text: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', label: status };
         }
     };
 
@@ -115,7 +115,7 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
 
 
     return (
-        <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col ${className}`}>
+        <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm ${className}`}>
             {/* ── Entête & Filtres Avancés ── */}
             <div className="px-4 py-3 flex flex-col gap-3 border-b border-gray-100 bg-slate-50/50 rounded-t-2xl text-start">
                 
@@ -133,19 +133,19 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
                         </div>
                         <button 
                             onClick={() => setShowMobileFilters(!showMobileFilters)} 
-                            className="md:hidden flex items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-colors"
+                            className="md:hidden flex items-center justify-center p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm transition-all active:scale-90"
                         >
-                            <Filter size={14} className={showMobileFilters ? "text-orange-500" : "text-gray-400"} />
+                            <Filter size={16} className={showMobileFilters ? "text-orange-500" : "text-gray-400"} />
                         </button>
                     </div>
                     
-                    <div className={`relative w-full md:w-auto ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
-                        <Calendar className="absolute top-2 text-gray-400 rtl:right-2.5 ltr:left-2.5" size={14} />
+                    <div className={`relative w-full md:w-auto transition-all duration-300 ${showMobileFilters ? 'opacity-100' : 'hidden md:block'}`}>
+                        <Calendar className="absolute top-3 text-orange-400 rtl:right-3 ltr:left-3" size={14} />
                         <input 
                             type="date" 
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            className="w-full md:w-auto py-1.5 bg-white border border-gray-200 text-xs font-bold text-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer rtl:pr-8 rtl:pl-3 ltr:pl-8 ltr:pr-3 text-start"
+                            className="w-full md:w-auto py-2.5 bg-white border border-gray-100 text-xs font-black text-gray-700 rounded-xl outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 cursor-pointer rtl:pr-9 rtl:pl-4 ltr:pl-9 ltr:pr-4 shadow-sm text-start transition-all"
                         />
                     </div>
                 </div>
@@ -154,19 +154,19 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
                 <div className={`grid-cols-1 md:grid-cols-4 gap-2 mt-1 md:mt-1 ${showMobileFilters ? 'grid' : 'hidden md:grid'}`}>
                     
                     <div className="relative">
-                        <Search className="absolute top-2 text-gray-400 rtl:right-2.5 ltr:left-2.5" size={14} />
+                        <Search className="absolute top-3 text-gray-400 rtl:right-3 ltr:left-3" size={14} />
                         <input
                             type="text"
                             placeholder={t('supervisor.actionHistoryPanel.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full py-1.5 bg-white border border-gray-200 text-xs font-medium rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 rtl:pr-8 rtl:pl-3 ltr:pl-8 ltr:pr-3 text-start"
+                            className="w-full py-2.5 bg-white border border-gray-100 text-xs font-bold rounded-xl outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 rtl:pr-9 rtl:pl-4 ltr:pl-9 ltr:pr-4 shadow-sm text-start transition-all placeholder:text-gray-300"
                         />
                     </div>
 
                     <select 
                         value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)}
-                        className="w-full py-1.5 px-2.5 bg-white border border-gray-200 text-xs font-medium rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-start"
+                        className="w-full py-2.5 px-3 bg-white border border-gray-100 text-xs font-bold text-gray-600 rounded-xl outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 shadow-sm text-start appearance-none cursor-pointer"
                     >
                         <option value="all">{t('supervisor.actionHistoryPanel.subjectAll')}</option>
                         {uniqueSubjects.map(s => <option key={s as string} value={s as string}>{s as string}</option>)}
@@ -174,16 +174,15 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
 
                     <select 
                         value={filterClass} onChange={(e) => setFilterClass(e.target.value)}
-                        className="w-full py-1.5 px-2.5 bg-white border border-gray-200 text-xs font-medium rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-start"
+                        className="w-full py-2.5 px-3 bg-white border border-gray-100 text-xs font-bold text-gray-600 rounded-xl outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 shadow-sm text-start appearance-none cursor-pointer"
                     >
                         <option value="all">{t('supervisor.actionHistoryPanel.classAll')}</option>
                         {uniqueClasses.map(c => <option key={c as string} value={c as string}>{c as string}</option>)}
                     </select>
                     
-                    {/* Status Pill Menu */}
                     <select
                         value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                        className="w-full py-1.5 px-2.5 bg-white border border-gray-200 text-xs font-bold text-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-start"
+                        className="w-full py-2.5 px-3 bg-white border border-gray-100 text-xs font-black text-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 shadow-sm text-start appearance-none cursor-pointer"
                     >
                         <option value="all">{t('supervisor.actionHistoryPanel.statusAll')}</option>
                         <option value="present">{t('supervisor.actionHistoryPanel.present')}</option>
@@ -194,7 +193,7 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
             </div>
 
             {/* ── Liste Moderne (Remplaçant le tableau HTML) ── */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 p-2 sm:p-3">
+            <div className="bg-slate-50/50 p-2 sm:p-3">
                 <div className="space-y-2">
                     {loading ? (
                         Array.from({ length: 6 }).map((_, i) => (
@@ -216,52 +215,107 @@ export const ActionHistoryPanel = ({ className = '' }: { className?: string }) =
                         filteredLogs.map((log) => {
                             const sc = getStatusConfig(log.status);
                             const Icon = sc.icon;
-                            // Format temp explicit
                             const timeStart = log.schedule?.time_start?.slice(0, 5) || '—';
                             const timeEnd = log.schedule?.time_end?.slice(0, 5) || '—';
                             const recTime = new Date(log.recorded_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                             
-                            return (
-                                <div key={log.id} className="bg-white border border-gray-100 rounded-xl p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-orange-300 hover:shadow-sm transition-all group">
+                            // Parse reason to separate delay from motive if possible
+                            let delayPart = '';
+                            let motivePart = log.reason || '';
+                            const latePrefixAr = t('supervisor.currentSessionCard.late', { lng: 'ar' });
+                            const latePrefixFr = t('supervisor.currentSessionCard.late', { lng: 'fr' });
+                            
+                            if (log.reason && (log.reason.startsWith(latePrefixAr) || log.reason.startsWith(latePrefixFr))) {
+                                const parts = log.reason.split(' - ');
+                                if (parts.length > 0) {
+                                    delayPart = parts[0];
                                     
-                                    {/* Left: Avatar & Info */}
-                                    <div className="flex items-center gap-3 w-full sm:w-1/3 text-start">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${sc.bg} ${sc.text} shadow-sm border ${sc.border}`}>
-                                            <Icon size={16} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h3 className="font-bold text-slate-800 text-xs sm:text-sm truncate">{log.schedule?.teacher}</h3>
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                <p className="font-semibold text-slate-500 text-[10px] truncate">{log.schedule?.subject}</p>
-                                                <span className="text-[8px] font-black uppercase text-orange-600 bg-orange-50 px-1.5 py-[1px] rounded flex-shrink-0 border border-orange-100">
-                                                    {log.schedule?.class}
-                                                </span>
+                                    // RE-FORMAT DELAY if it's in raw minutes (e.g. "86 دقائق" -> "ساعة و 26 دقيقة")
+                                    const minMatch = delayPart.match(/(\d+)/);
+                                    if (minMatch && !delayPart.includes(t('supervisor.currentSessionCard.hour', { lng: 'fr' })) && !delayPart.includes(t('supervisor.currentSessionCard.hour', { lng: 'ar' }))) {
+                                        const totalMins = parseInt(minMatch[1]);
+                                        if (totalMins >= 60) {
+                                            const h = Math.floor(totalMins / 60);
+                                            const m = totalMins % 60;
+                                            const isRtl = i18n.language === 'ar';
+                                            
+                                            let hrT = "";
+                                            if (isRtl) {
+                                                if (h === 1) hrT = t('supervisor.currentSessionCard.hour');
+                                                else if (h === 2) hrT = "ساعتان";
+                                                else hrT = `${h} ${t('supervisor.currentSessionCard.hour')}`;
+                                            } else {
+                                                hrT = `${h} ${t('supervisor.currentSessionCard.hour')}${h > 1 ? 's' : ''}`;
+                                            }
+                                            
+                                            const andT = t('supervisor.currentSessionCard.and');
+                                            const minT = t('supervisor.currentSessionCard.minutes');
+                                            
+                                            const latePrefix = log.reason.startsWith(latePrefixAr) ? latePrefixAr : latePrefixFr;
+                                            
+                                            if (m === 0) delayPart = `${latePrefix} ${hrT}`;
+                                            else delayPart = `${latePrefix} ${hrT} ${andT} ${m} ${minT}`;
+                                        }
+                                    }
+                                    
+                                    motivePart = parts.slice(1).join(' - ');
+                                }
+                            }
+
+                            return (
+                                <div key={log.id} 
+                                    className="bg-white border border-gray-100 rounded-xl p-3 flex flex-col gap-3 hover:border-orange-200 transition-all shadow-sm active:scale-[0.99] ltr:text-left rtl:text-right"
+                                >
+                                    {/* Top: Teacher & Status */}
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${sc.bg} ${sc.text} border ${sc.border}`}>
+                                                <Icon size={16} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-slate-800 text-sm truncate uppercase tracking-tight">{log.schedule?.teacher}</h3>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 uppercase">
+                                                        {log.schedule?.class}
+                                                    </span>
+                                                    <p className="text-[10px] font-medium text-slate-500 truncate">{log.schedule?.subject}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Middle: Times */}
-                                    <div className="flex items-center justify-center gap-3 py-1.5 px-3 rounded-lg border border-slate-100 bg-slate-50 w-full sm:w-auto" dir="ltr">
-                                        <span className="font-mono text-[10px] font-bold text-slate-500">
-                                            {timeStart}-{timeEnd}
-                                        </span>
-                                        <div className="w-[1px] h-4 bg-slate-200"></div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Clock size={11} className="text-orange-400" />
-                                            <span className="font-mono text-xs font-black text-slate-700">{recTime}</span>
+                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                            <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border shadow-sm ${sc.bg} ${sc.text} ${sc.border}`}>
+                                                {sc.label}
+                                            </div>
+                                            <span className="font-mono text-[10px] font-bold text-slate-400">{recTime}</span>
                                         </div>
                                     </div>
 
-                                    {/* Right: Status Badge */}
-                                    <div className="flex items-center sm:justify-end gap-2 w-full sm:w-1/4 text-end">
-                                        <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border ${sc.bg} ${sc.border} ${sc.text} shadow-sm`}>
-                                            <span className="text-[10px] font-bold tracking-wide uppercase">{sc.label}</span>
+                                    {/* Bottom Info: Delay & Reason - Cleaned up */}
+                                    {(delayPart || motivePart) && (
+                                        <div className="space-y-1.5 pt-2 border-t border-gray-50">
+                                            {delayPart && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock size={11} className="text-amber-400" />
+                                                    <p className="text-[11px] font-bold text-amber-600">{delayPart}</p>
+                                                </div>
+                                            )}
+                                            {motivePart && (
+                                                <div className="flex items-start gap-2">
+                                                    <div className="mt-1 flex-shrink-0 text-slate-300">
+                                                        <MessageSquare size={11} />
+                                                    </div>
+                                                    <p className="text-[11px] font-medium text-slate-600 leading-normal italic bg-slate-50/50 p-1.5 rounded-lg w-full">
+                                                        {motivePart}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
-                                        {log.reason && (
-                                            <p className="text-[9px] text-gray-400 italic max-w-[80px] truncate text-start" title={log.reason}>
-                                                {log.reason}
-                                            </p>
-                                        )}
+                                    )}
+
+                                    {/* Slot info */}
+                                    <div className="flex items-center justify-between mt-0.5">
+                                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{t('supervisor.actionHistoryPanel.slot')}</span>
+                                        <span className="font-mono text-[10px] font-bold text-slate-300" dir="ltr">{timeStart} — {timeEnd}</span>
                                     </div>
                                 </div>
                             );

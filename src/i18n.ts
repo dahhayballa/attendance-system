@@ -318,6 +318,7 @@ const resources = {
           liveDashboard: 'لوحة التحكم المباشرة',
           supervisors: 'المشرفون',
           reports: 'التقارير',
+          statistics: 'الإحصائيات',
         },
         dashboard: {
           title: 'لوحة تحكم المدير',
@@ -660,6 +661,7 @@ const resources = {
           liveDashboard: 'En Direct',
           supervisors: 'Superviseurs',
           reports: 'Rapports',
+          statistics: 'Statistiques',
         },
         dashboard: {
           title: 'Tableau de bord administrateur',

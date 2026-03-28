@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { useStatistics } from '../hooks/useStatistics';
+import { useStatistics, FilterState } from '../hooks/useStatistics';
 import { useRole } from '../../features/auth/hooks/useRole';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
+import SearchableSelect from '../components/ui/SearchableSelect';
 import { 
-    Users, Clock, AlertTriangle, CheckCircle, 
-    TrendingUp, Activity, BarChart3, Calendar, RefreshCw,
-    GraduationCap, UserCheck, ChevronRight, BookOpen, Bell, Info, Filter, Search
+    Clock, AlertTriangle, CheckCircle, 
+    TrendingUp, Activity, 
+    GraduationCap, UserCheck, ChevronRight, BookOpen, Bell, Info
 } from 'lucide-react';
 import { 
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis, 
@@ -119,56 +120,32 @@ const StatisticsPage = () => {
 
                 {/* FILTERS BAR */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 ltr:left-4 rtl:right-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-black transition-colors">
-                            <UserCheck size={14} />
-                        </div>
-                        <select 
-                            value={filters.teacher}
-                            onChange={(e) => setFilters((prev: any) => ({ ...prev, teacher: e.target.value }))}
-                            className="w-full ltr:pl-12 rtl:pr-12 pr-10 py-3.5 bg-white border border-gray-100 rounded-2xl text-[11px] font-black text-gray-900 outline-none focus:ring-4 focus:ring-black/5 focus:border-gray-200 transition-all appearance-none cursor-pointer shadow-sm uppercase tracking-widest"
-                        >
-                            <option value="all">TOUS LES ENSEIGNANTS</option>
-                            {options.teachers.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <div className="absolute inset-y-0 ltr:right-4 rtl:left-4 flex items-center pointer-events-none text-gray-300">
-                             <ChevronRight size={14} className="rotate-90" />
-                        </div>
-                    </div>
+                    <SearchableSelect 
+                        value={filters.teacher}
+                        onChange={(val: string) => setFilters((prev: FilterState) => ({ ...prev, teacher: val }))}
+                        options={options.teachers}
+                        placeholder="Enseignant"
+                        icon={<UserCheck size={14} />}
+                        allLabel="TOUS LES ENSEIGNANTS"
+                    />
 
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 ltr:left-4 rtl:right-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-black transition-colors">
-                            <BookOpen size={14} />
-                        </div>
-                        <select 
-                            value={filters.subject}
-                            onChange={(e) => setFilters((prev: any) => ({ ...prev, subject: e.target.value }))}
-                            className="w-full ltr:pl-12 rtl:pr-12 pr-10 py-3.5 bg-white border border-gray-100 rounded-2xl text-[11px] font-black text-gray-900 outline-none focus:ring-4 focus:ring-black/5 focus:border-gray-200 transition-all appearance-none cursor-pointer shadow-sm uppercase tracking-widest"
-                        >
-                            <option value="all">TOUTES LES MATIÈRES</option>
-                            {options.subjects.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <div className="absolute inset-y-0 ltr:right-4 rtl:left-4 flex items-center pointer-events-none text-gray-300">
-                             <ChevronRight size={14} className="rotate-90" />
-                        </div>
-                    </div>
+                    <SearchableSelect 
+                        value={filters.subject}
+                        onChange={(val: string) => setFilters((prev: FilterState) => ({ ...prev, subject: val }))}
+                        options={options.subjects}
+                        placeholder="Matière"
+                        icon={<BookOpen size={14} />}
+                        allLabel="TOUTES LES MATIÈRES"
+                    />
 
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 ltr:left-4 rtl:right-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-black transition-colors">
-                            <GraduationCap size={14} />
-                        </div>
-                        <select 
-                            value={filters.class}
-                            onChange={(e) => setFilters((prev: any) => ({ ...prev, class: e.target.value }))}
-                            className="w-full ltr:pl-12 rtl:pr-12 pr-10 py-3.5 bg-white border border-gray-100 rounded-2xl text-[11px] font-black text-gray-900 outline-none focus:ring-4 focus:ring-black/5 focus:border-gray-200 transition-all appearance-none cursor-pointer shadow-sm uppercase tracking-widest"
-                        >
-                            <option value="all">TOUTES LES CLASSES</option>
-                            {options.classes.map((c: string) => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <div className="absolute inset-y-0 ltr:right-4 rtl:left-4 flex items-center pointer-events-none text-gray-300">
-                             <ChevronRight size={14} className="rotate-90" />
-                        </div>
-                    </div>
+                    <SearchableSelect 
+                        value={filters.class}
+                        onChange={(val: string) => setFilters((prev: FilterState) => ({ ...prev, class: val }))}
+                        options={options.classes}
+                        placeholder="Classe"
+                        icon={<GraduationCap size={14} />}
+                        allLabel="TOUTES LES CLASSES"
+                    />
                 </div>
 
                 {activeView === 'overview' && (
@@ -409,8 +386,18 @@ const StatisticsPage = () => {
 
 // --- Sub-components ---
 
-const SmallAdvancedCard = ({ icon, label, value, color, info, onClick, onInfo }: any) => {
-    const variants: any = {
+interface SmallAdvancedCardProps {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+    color: 'emerald' | 'rose' | 'amber' | 'blue' | 'orange' | 'gray';
+    info?: string;
+    onClick?: () => void;
+    onInfo?: (title: string, content: string) => void;
+}
+
+const SmallAdvancedCard = ({ icon, label, value, color, info, onClick, onInfo }: SmallAdvancedCardProps) => {
+    const variants: Record<string, string> = {
         emerald: 'bg-emerald-50 text-emerald-500',
         rose: 'bg-rose-50 text-rose-500',
         amber: 'bg-amber-50 text-amber-500',

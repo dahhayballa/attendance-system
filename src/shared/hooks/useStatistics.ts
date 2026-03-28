@@ -47,6 +47,12 @@ export interface FilterOptions {
     subjects: string[];
 }
 
+export interface FilterState {
+    teacher: string;
+    subject: string;
+    class: string;
+}
+
 export interface StatisticsData {
     kpis: StatsKPI;
     rates: StatsRates;
@@ -74,11 +80,27 @@ export const useStatistics = () => {
     const { isAdmin, isSupervisor, isSurveillance } = useRole();
     
     const [timeframe, setTimeframe] = useState<'week' | 'month'>('week');
-    const [filters, setFilters] = useState({
+    const [filters, setFiltersState] = useState<FilterState>({
         teacher: 'all',
         subject: 'all',
         class: 'all'
     });
+
+    const setFilters = useCallback((newFilters: FilterState | ((prev: FilterState) => FilterState)) => {
+        setFiltersState(prev => {
+            const updated = typeof newFilters === 'function' ? newFilters(prev) : newFilters;
+            
+            // If teacher changes, reset subject and class to ensure valid cascade
+            if (updated.teacher !== prev.teacher) {
+                return { ...updated, subject: 'all', class: 'all' };
+            }
+            // If subject changes, reset class
+            if (updated.subject !== prev.subject) {
+                return { ...updated, class: 'all' };
+            }
+            return updated;
+        });
+    }, []);
     
     const [state, setState] = useState<StatisticsData>({
         kpis: INITIAL_KPIS,
@@ -156,7 +178,11 @@ export const useStatistics = () => {
             const baseLogs = logsData || [];
             
             // Extract options for filters (from all logs in timeframe, scoped by supervisor if applicable)
-            let scopeFiltered = baseLogs;
+            let scopeFiltered = baseLogs.map(log => ({
+                ...log,
+                schedules: Array.isArray(log.schedules) ? log.schedules[0] : log.schedules
+            }));
+
             if (isSupervisor && scope) {
                 scopeFiltered = scopeFiltered.filter(log => {
                     const sched = log.schedules as any;
@@ -167,13 +193,45 @@ export const useStatistics = () => {
                 });
             }
 
-            const teachers = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
-            const classes = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
-            const subjects = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            // --- CASCADING OPTIONS LOGIC ---
+            // 1. Initial base unique values
+            const allTeachers = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+            const allSubjects = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            const allClasses = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
 
+            let teachers = allTeachers;
+            let subjects = allSubjects;
+            let classes = allClasses;
+
+            // 2. Resolve hierarchical constraints (BI-DIRECTIONAL CASCADNG)
+            // Teachers list based on subject/class
+            if (filters.subject !== 'all' || filters.class !== 'all') {
+                let tLogs = scopeFiltered;
+                if (filters.subject !== 'all') tLogs = tLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                if (filters.class !== 'all') tLogs = tLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                teachers = Array.from(new Set(tLogs.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+            }
+            
+            // Subjects list based on teacher/class
+            if (filters.teacher !== 'all' || filters.class !== 'all') {
+                let sLogs = scopeFiltered;
+                if (filters.teacher !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                if (filters.class !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                subjects = Array.from(new Set(sLogs.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            }
+
+            // Classes list based on teacher/subject
+            if (filters.teacher !== 'all' || filters.subject !== 'all') {
+                let cLogs = scopeFiltered;
+                if (filters.teacher !== 'all') cLogs = cLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                if (filters.subject !== 'all') cLogs = cLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                classes = Array.from(new Set(cLogs.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
+            }
+
+            // 5. Final Filtering for Dashboard Metrics
             let filteredLogs = scopeFiltered;
 
-            // Apply UI Filters
+            // Apply UI Filters to the logs that will be used for calculations
             if (filters.teacher !== 'all') {
                 filteredLogs = filteredLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
             }

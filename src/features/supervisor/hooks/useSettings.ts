@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import i18n from 'i18next';
 
 /* ═══════════ Types ═══════════ */
 
@@ -119,6 +120,13 @@ export const useSettings = () => {
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
     }, [settings.theme]);
+    
+    // ═══ Language Sync ═══
+    useEffect(() => {
+        if (i18n.language !== settings.language) {
+            i18n.changeLanguage(settings.language);
+        }
+    }, [settings.language]);
 
     return { settings, update, updateNested, resetToDefaults };
 };

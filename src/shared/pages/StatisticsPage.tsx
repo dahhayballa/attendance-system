@@ -7,9 +7,9 @@ import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import SearchableSelect from '../components/ui/SearchableSelect';
 import { 
-    Clock, AlertTriangle, CheckCircle, 
     TrendingUp, Activity, 
-    GraduationCap, UserCheck, ChevronRight, BookOpen, Bell, Info
+    GraduationCap, UserCheck, ChevronRight, BookOpen, Bell, Info, Filter, Calendar,
+    Clock, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { 
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis, 
@@ -25,7 +25,7 @@ type ViewType = 'overview' | 'classes' | 'teachers' | 'subjects';
 const StatisticsPage = () => {
     const { 
         kpis, rates, recentAlerts, dailyTrend, byClass, byTeacher, bySubject, advanced, timeframe, setTimeframe, 
-        loading, error, refetch, options, filters, setFilters 
+        customDate, setCustomDate, loading, error, refetch, options, filters, setFilters 
     } = useStatistics();
     const { role } = useRole();
     const [activeView, setActiveView] = useState<ViewType>('overview');
@@ -34,6 +34,7 @@ const StatisticsPage = () => {
         title: '', 
         content: '' 
     });
+    const [showFilters, setShowFilters] = useState(false);
 
     const showInfo = (title: string, content: string) => {
         setInfoModal({ isOpen: true, title, content });
@@ -79,12 +80,12 @@ const StatisticsPage = () => {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                     <div>
                         <h1 className="text-2xl font-black text-gray-950 tracking-tight flex items-center gap-2">
-                            Dashboard {activeView !== 'overview' && <><ChevronRight className="text-gray-300" /> {activeView === 'classes' ? 'Classes' : activeView === 'teachers' ? 'Enseignants' : 'Matières'}</>}
+                            Statistiques {activeView !== 'overview' && <><ChevronRight className="text-gray-300" /> {activeView === 'classes' ? 'Classes' : activeView === 'teachers' ? 'Enseignants' : 'Matières'}</>}
                         </h1>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Analyse approfondie ({role})</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start sm:justify-end w-full sm:w-auto">
+                        <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 flex-shrink-0">
                             {[
                                 { id: 'overview', icon: <TrendingUp size={14} />, label: 'Général' },
                                 { id: 'classes', icon: <GraduationCap size={14} />, label: 'Classes' },
@@ -101,25 +102,54 @@ const StatisticsPage = () => {
                                 </button>
                             ))}
                         </div>
-                        <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
+                        <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 flex-shrink-0">
+                            <button 
+                                onClick={() => setTimeframe('day')}
+                                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeframe === 'day' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                            >
+                                JOUR
+                            </button>
                             <button 
                                 onClick={() => setTimeframe('week')}
-                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeframe === 'week' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeframe === 'week' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
                             >
                                 SEMAINE
                             </button>
                             <button 
                                 onClick={() => setTimeframe('month')}
-                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeframe === 'month' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeframe === 'month' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
                             >
                                 MOIS
                             </button>
                         </div>
+
+                        {timeframe === 'day' && (
+                            <div className="relative group">
+                                <input 
+                                    type="date"
+                                    value={customDate}
+                                    onChange={(e) => setCustomDate(e.target.value)}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                                    onClick={(e: any) => e.currentTarget.showPicker?.()}
+                                />
+                                <div className="flex items-center gap-2 p-2 px-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-black transition-all">
+                                    <Calendar size={14} className="text-gray-400 group-hover:text-black" />
+                                    <span className="text-[10px] font-black text-gray-950">{new Date(customDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                                </div>
+                            </div>
+                        )}
+                        <button 
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`p-2 px-4 rounded-xl border transition-all flex items-center gap-2 flex-shrink-0 ${showFilters ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200 shadow-sm'}`}
+                        >
+                            <Filter size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Filtres</span>
+                        </button>
                     </div>
                 </div>
 
                 {/* FILTERS BAR */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2 overflow-hidden transition-all duration-300 ease-in-out ${showFilters ? 'max-h-[500px] opacity-100 mb-8' : 'max-h-0 opacity-0 mb-0 pointer-events-none'}`}>
                     <SearchableSelect 
                         value={filters.teacher}
                         onChange={(val: string) => setFilters((prev: FilterState) => ({ ...prev, teacher: val }))}
@@ -150,14 +180,14 @@ const StatisticsPage = () => {
 
                 {activeView === 'overview' && (
                     <>
-                         {/* ADVANCED KPI SECTION */}
-                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                             <SmallAdvancedCard onInfo={showInfo} icon={<CheckCircle size={14} />} label="Présents" value={kpis.totalPresence} color="emerald" info="Nombre total de présences enregistrées sur la période." />
-                             <SmallAdvancedCard onInfo={showInfo} icon={<Activity size={14} />} label="Absents" value={kpis.totalAbsent} color="rose" info="Total des sessions marquées comme 'Absent' ou 'Absent Justifié'." />
-                             <SmallAdvancedCard onInfo={showInfo} icon={<Clock size={14} />} label="Retards" value={kpis.totalLate} color="amber" info="Sessions enregistrées avec un statut de retard." />
-                             <SmallAdvancedCard onInfo={showInfo} icon={<TrendingUp size={14} />} label="Score (Avg)" value={`${advanced.avgPoints}/10`} color="blue" info="Note d'assiduité moyenne calculée sur les points de ponctualité." />
-                             <SmallAdvancedCard onInfo={showInfo} icon={<Clock size={14} />} label="Délai (Avg)" value={`${advanced.avgDelay}m`} color="gray" info="Temps de retard moyen constaté (en minutes)." />
-                             <SmallAdvancedCard onInfo={showInfo} icon={<Bell size={14} />} label="Notifications" value={advanced.unreadNotifications} color={advanced.unreadNotifications > 0 ? "orange" : "gray"} info="Alertes système en attente de lecture." />
+                        {/* ADVANCED KPI SECTION */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                            <SmallAdvancedCard onInfo={showInfo} icon={<CheckCircle size={14} />} label="Présents" value={kpis.totalPresence} color="emerald" info="Nombre total de présences enregistrées sur la période." />
+                            <SmallAdvancedCard onInfo={showInfo} icon={<Activity size={14} />} label="Absents" value={kpis.totalAbsent} color="rose" info="Total des sessions marquées comme 'Absent' ou 'Absent Justifié'." />
+                            <SmallAdvancedCard onInfo={showInfo} icon={<Clock size={14} />} label="Retards" value={kpis.totalLate} color="amber" info="Sessions enregistrées avec un statut de retard." />
+                            <SmallAdvancedCard onInfo={showInfo} icon={<TrendingUp size={14} />} label="Score (Avg)" value={`${advanced.avgPoints}/10`} color="blue" info="Note d'assiduité moyenne calculée sur les points de ponctualité." />
+                            <SmallAdvancedCard onInfo={showInfo} icon={<Clock size={14} />} label="Délai (Avg)" value={`${advanced.avgDelay}m`} color="gray" info="Temps de retard moyen constaté (en minutes)." />
+                            <SmallAdvancedCard onInfo={showInfo} icon={<Bell size={14} />} label="Notifications" value={advanced.unreadNotifications} color={advanced.unreadNotifications > 0 ? "orange" : "gray"} info="Alertes système en attente de lecture." />
                         </div>
 
                         {/* CHARTS SECTION */}
@@ -343,7 +373,7 @@ const StatisticsPage = () => {
 
                 {activeView !== 'overview' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-right-4 duration-500 px-2 lg:px-0">
-                        {(activeView === 'classes' ? byClass : activeView === 'teachers' ? byTeacher : bySubject).map((item) => (
+                        {(activeView === 'classes' ? byClass : activeView === 'teachers' ? byTeacher : bySubject).map((item: any) => (
                             <Card key={item.name} className="border-gray-50 hover:shadow-xl transition-all h-full" padding="p-6">
                                 <div className="flex items-start justify-between">
                                     <div className="flex flex-col min-w-0 pr-4">

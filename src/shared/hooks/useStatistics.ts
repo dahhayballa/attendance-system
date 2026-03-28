@@ -79,7 +79,8 @@ export const useStatistics = () => {
     const { user } = useAuth();
     const { isAdmin, isSupervisor, isSurveillance } = useRole();
     
-    const [timeframe, setTimeframe] = useState<'week' | 'month'>('week');
+    const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
+    const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [filters, setFiltersState] = useState<FilterState>({
         teacher: 'all',
         subject: 'all',
@@ -148,16 +149,29 @@ export const useStatistics = () => {
             }
 
             // 2. Fetch Attendance Logs based on timeframe
-            const daysToFetch = timeframe === 'week' ? 7 : 30;
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - daysToFetch);
+            let startDate = new Date();
+            let endDate = new Date();
+            let daysToProcess = 1;
+            
+            if (timeframe === 'day') {
+                startDate = new Date(customDate);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 1);
+                daysToProcess = 1;
+            } else {
+                daysToProcess = timeframe === 'week' ? 7 : 30;
+                startDate.setDate(startDate.getDate() - daysToProcess);
+                // Default endDate is now
+            }
             
             let logsQuery = supabase.from('attendance_logs').select(`
                 id, status, recorded_at, points, late_minutes,
                 schedules (
                     id, teacher_name, class_name, subject, teacher, class
                 )
-            `).gte('recorded_at', startDate.toISOString());
+            `).gte('recorded_at', startDate.toISOString())
+              .lt('recorded_at', endDate.toISOString());
 
             // 2.1 Fetch Notifications (to count them)
             const { data: notifData } = await supabase.from('notifications').select('id, read');
@@ -270,7 +284,7 @@ export const useStatistics = () => {
             const advUnreadCount = notifData?.filter(n => !n.read).length || 0;
 
             // Daily Trend (dynamic timeframe)
-            const dailyTrend = processDailyTrend(filteredLogs, daysToFetch);
+            const dailyTrend = processDailyTrend(filteredLogs, daysToProcess, timeframe === 'day' ? new Date(customDate) : new Date());
 
             // Grouped Stats (Class, Teacher, Subject)
             const byClass = processGroupedStats(filteredLogs, 'class_name');
@@ -306,24 +320,23 @@ export const useStatistics = () => {
             console.error('[useStatistics] Error:', err);
             setState(prev => ({ ...prev, loading: false, error: err.message || 'Error loading statistics' }));
         }
-    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, filters]);
+    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, customDate, filters]);
 
     useEffect(() => {
         fetchStatistics();
     }, [fetchStatistics]);
 
-    return { ...state, timeframe, setTimeframe, filters, setFilters, refetch: fetchStatistics };
+    return { ...state, timeframe, setTimeframe, customDate, setCustomDate, filters, setFilters, refetch: fetchStatistics };
 };
 
 /**
  * Helper to process daily trend from logs
  */
-function processDailyTrend(logs: any[], daysCount: number): DailyTrend[] {
+function processDailyTrend(logs: any[], daysCount: number, referenceDate: Date): DailyTrend[] {
     const days: Record<string, { presence: number, late: number, absence: number }> = {};
     
-    const now = new Date();
     for (let i = daysCount - 1; i >= 0; i--) {
-        const d = new Date(now);
+        const d = new Date(referenceDate);
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         days[dateStr] = { presence: 0, late: 0, absence: 0 };

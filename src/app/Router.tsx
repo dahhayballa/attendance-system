@@ -8,7 +8,7 @@ import LiveDashboardPage from '../features/admin/pages/LiveDashboardPage';
 import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
 import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
 import ActionHistoryPage from '../features/supervisor/pages/ActionHistoryPage';
-import StatisticsPage from '../features/supervisor/pages/StatisticsPage';
+import StatisticsPage from '../shared/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
 
@@ -77,6 +77,14 @@ export const Router = () => {
                     </ProtectedRoute>
                 }
             />
+            <Route
+                path="/admin/statistics"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <StatisticsPage />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Supervisor Routes */}
             <Route
@@ -106,7 +114,7 @@ export const Router = () => {
             <Route
                 path="/supervisor/statistics"
                 element={
-                    <ProtectedRoute requireRole="supervisor">
+                    <ProtectedRoute>
                         <StatisticsPage />
                     </ProtectedRoute>
                 }

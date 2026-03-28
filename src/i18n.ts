@@ -105,7 +105,9 @@ const resources = {
           addNoteTitle: 'إضافة مبرر',
           absentPlaceholder: 'سبب الغياب (اختياري)...',
           notePlaceholder: 'اكتب المبرر هنا...',
-          minutes: 'دقائق',
+          minutes: 'دقيقة',
+          hour: 'ساعة',
+          and: 'و',
           confirm: 'تأكيد',
           cancel: 'إلغاء',
           errorTitle: 'خطأ',
@@ -165,7 +167,22 @@ const resources = {
         },
         settingsPage: {
           title: 'الإعدادات',
-          subtitle: 'تخصيص المظهر والإشعارات والتفضيلات',
+          subtitle: 'إدارة حسابك وتفضيلاتك',
+          sections: {
+            profile: 'الملف الشخصي',
+            security: 'الأمان',
+            preferences: 'التفضيلات',
+            dangerZone: 'إجراءات الحساب'
+          },
+          security: {
+            changePassword: 'تغيير كلمة المرور',
+            currentPassword: 'كلمة المرور الحالية',
+            newPassword: 'كلمة المرور الجديدة',
+            confirmPassword: 'تأكيد كلمة المرور',
+            updateButton: 'تحديث كلمة المرور',
+            success: 'تم تحديث كلمة المرور بنجاح',
+            error: 'فشل العملية: كلمة المرور الحالية غير صحيحة أو هناك خطأ آخر'
+          }
         },
         alertsPage: {
           title: 'التنبيهات',
@@ -252,10 +269,13 @@ const resources = {
         },
         actionHistoryPanel: {
           title: 'سجل الإدخالات',
+          actionsCount_zero: 'لا توجد إدخالات اليوم',
           actionsCount_one: 'إجراء واحد اليوم',
           actionsCount_two: 'إجراءان اليوم',
-          actionsCount_other: '{{count}} إجراءات اليوم',
-          actionsCount_default: '{{count}} إجراء(ات) اليوم',
+          actionsCount_few: '{{count}} إجراءات اليوم',
+          actionsCount_many: '{{count}} إجراءً اليوم',
+          actionsCount_other: '{{count}} إجراء اليوم',
+          actionsCount: '{{count}} إجراء اليوم',
           searchPlaceholder: 'ابحث عن أستاذ...',
           subjectAll: 'المادة (الكل)',
           classAll: 'القسم (الكل)',
@@ -313,6 +333,7 @@ const resources = {
           liveDashboard: 'لوحة التحكم المباشرة',
           supervisors: 'المشرفون',
           reports: 'التقارير',
+          statistics: 'الإحصائيات',
         },
         dashboard: {
           title: 'لوحة تحكم المدير',
@@ -447,6 +468,8 @@ const resources = {
           absentPlaceholder: 'Raison de l\'absence (optionnelle)...',
           notePlaceholder: 'Écrire le motif ici...',
           minutes: 'minutes',
+          hour: 'heure',
+          and: 'et',
           confirm: 'Confirmer',
           cancel: 'Annuler',
           errorTitle: 'Erreur',
@@ -506,7 +529,22 @@ const resources = {
         },
         settingsPage: {
           title: 'Paramètres',
-          subtitle: 'Personnaliser l\'apparence, les notifications et les préférences',
+          subtitle: 'Gérez votre compte et vos préférences',
+          sections: {
+            profile: 'Profil',
+            security: 'Sécurité',
+            preferences: 'Préférences',
+            dangerZone: 'Actions du compte'
+          },
+          security: {
+            changePassword: 'Changer le mot de passe',
+            currentPassword: 'Mot de passe actuel',
+            newPassword: 'Nouveau mot de passe',
+            confirmPassword: 'Confirmer le mot de passe',
+            updateButton: 'Mettre à jour',
+            success: 'Mot de passe mis à jour avec succès',
+            error: 'Échec : mot de passe actuel incorrect ou autre erreur'
+          }
         },
         alertsPage: {
           title: 'Alertes',
@@ -593,9 +631,9 @@ const resources = {
         },
         actionHistoryPanel: {
           title: 'Journal des Saisies',
-          actionsCount_one: '{{count}} action ce jour',
-          actionsCount_other: '{{count}} action(s) ce jour',
-          actionsCount_default: '{{count}} action(s) ce jour',
+          actionsCount_one: '{{count}} action aujourd\'hui',
+          actionsCount_other: '{{count}} actions aujourd\'hui',
+          actionsCount: '{{count}} action(s) aujourd\'hui',
           searchPlaceholder: 'Rechercher un prof...',
           subjectAll: 'Sujet (Tous)',
           classAll: 'Classe (Toutes)',
@@ -653,6 +691,7 @@ const resources = {
           liveDashboard: 'En Direct',
           supervisors: 'Superviseurs',
           reports: 'Rapports',
+          statistics: 'Statistiques',
         },
         dashboard: {
           title: 'Tableau de bord administrateur',

@@ -4,7 +4,7 @@ import { useCurrentSession } from '../hooks/useCurrentSession';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { recordAttendance } from '../services/attendanceService';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search } from 'lucide-react';
+import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search, Pencil } from 'lucide-react';
 import { Modal } from '../../../shared/components/ui/Modal';
 
 interface CurrentSessionCardProps {
@@ -22,7 +22,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
     const { toast } = useToast();
 
     const [recording, setRecording] = useState<string | null>(null);
-    const [modalState, setModalState] = useState<{ type: 'absent' | 'late' | 'notes' | null; scheduleId: string | null; value: any }>({ type: null, scheduleId: null, value: '' });
+    const [modalState, setModalState] = useState<{ type: 'absent' | 'late' | 'notes' | null; scheduleId: string | null; value: any; reason: string }>({ type: null, scheduleId: null, value: '', reason: '' });
     
     const [searchQuery, setSearchQuery] = useState('');
     const [infoSessionId, setInfoSessionId] = useState<string | null>(null);
@@ -32,6 +32,27 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
         const timer = setInterval(() => setCurrentTime(new Date()), 10000);
         return () => clearInterval(timer);
     }, []);
+
+    const formatDuration = (totalMinutes: number) => {
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        
+        if (hours === 0) {
+            return `${totalMinutes} ${t('supervisor.currentSessionCard.minutes')}`;
+        }
+        
+        let hrText = "";
+        if (isRtl) {
+            if (hours === 1) hrText = t('supervisor.currentSessionCard.hour');
+            else if (hours === 2) hrText = t('supervisor.currentSessionCard.hour_two', { defaultValue: 'ساعتان' });
+            else hrText = `${hours} ${t('supervisor.currentSessionCard.hour')}`;
+        } else {
+            hrText = `${hours} ${t('supervisor.currentSessionCard.hour')}${hours > 1 ? 's' : ''}`;
+        }
+            
+        if (mins === 0) return hrText;
+        return `${hrText} ${t('supervisor.currentSessionCard.and')} ${mins} ${t('supervisor.currentSessionCard.minutes')}`;
+    };
 
     const handleRecord = async (scheduleId: string, status: 'present' | 'absent' | 'late' | 'excused', extraNotes?: string) => {
         if (!user) return;
@@ -53,14 +74,17 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
         }
     };
 
-        // setModalState({ type, scheduleId, value: type === 'late' ? 5 : '' });
-    const closeModal = () => setModalState({ type: null, scheduleId: null, value: '' });
+    const closeModal = () => setModalState({ type: null, scheduleId: null, value: '', reason: '' });
 
     const confirmModal = () => {
-        const { type, scheduleId, value } = modalState;
+        const { type, scheduleId, value, reason } = modalState;
         if (!scheduleId) return;
         if (type === 'absent') handleRecord(scheduleId, 'absent', value || undefined);
-        if (type === 'late')   handleRecord(scheduleId, 'late', `${t('supervisor.currentSessionCard.late')} ${value} ${t('supervisor.currentSessionCard.minutes')}`);
+        if (type === 'late') {
+            const delayText = `${t('supervisor.currentSessionCard.late')} ${formatDuration(value)}`;
+            const fullNote = reason.trim() ? `${delayText} - ${reason.trim()}` : delayText;
+            handleRecord(scheduleId, 'late', fullNote);
+        }
         if (type === 'notes' && value.trim()) handleRecord(scheduleId, 'excused', value);
     };
 
@@ -126,8 +150,11 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
                                     const [sh, sm] = (session.time_start || '00:00').split(':').map(Number);
                                     const startMins = sh * 60 + sm;
-                                    const isLate = currentMins > startMins + 20;
+                                    const graceLimit = (sh === 8 && sm === 0) ? 40 : 20;
+                                    const isLate = currentMins > startMins + graceLimit;
                                     const isRecorded = session.status && session.status !== 'pending';
+                                    const diffMs = isRecorded && session.recorded_at ? (currentTime.getTime() - new Date(session.recorded_at).getTime()) : 999999;
+                                    const canEdit = isRecorded && diffMs <= 5 * 60 * 1000;
                                     
                                     const statusToSend = isLate ? 'late' : 'present';
                                     const Label = isLate ? t('supervisor.currentSessionCard.late') : t('supervisor.currentSessionCard.present');
@@ -135,16 +162,30 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     const colorClass = isLate 
                                         ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200' 
                                         : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200';
+                                    
+                                    const isEditable = isRecorded && canEdit;
+                                    const isDisabled = (recording === session.id) || (isRecorded && !isEditable);
+                                    const buttonBaseClass = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm active:scale-95";
 
                                     return (
                                         <button 
-                                            onClick={() => handleRecord(session.id, statusToSend)} 
-                                            disabled={recording === session.id || isRecorded}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm ${isRecorded ? 'opacity-50 cursor-not-allowed grayscale' : 'active:scale-95'} ${colorClass}`}
-                                            title={isRecorded ? t('supervisor.currentSessionCard.alreadyRecorded') : (isLate ? t('supervisor.currentSessionCard.markLate') : t('supervisor.currentSessionCard.markPresent'))}
+                                            onClick={() => {
+                                                if (statusToSend === 'late') {
+                                                    const cm = currentTime.getHours() * 60 + currentTime.getMinutes();
+                                                    const [shVal, smVal] = (session.time_start || '00:00').split(':').map(Number);
+                                                    const grace = (shVal === 8 && smVal === 0) ? 40 : 20;
+                                                    const diff = Math.max(1, cm - (shVal * 60 + smVal + grace));
+                                                    setModalState({ type: 'late', scheduleId: session.id, value: diff, reason: '' });
+                                                } else {
+                                                    handleRecord(session.id, statusToSend);
+                                                }
+                                            }}
+                                            disabled={isDisabled}
+                                            className={`${buttonBaseClass} ${isDisabled && isRecorded ? 'opacity-50 cursor-not-allowed grayscale' : 'active:scale-95'} ${isEditable ? 'bg-blue-50 text-blue-600 border-blue-200' : colorClass}`}
+                                            title={isRecorded && !isEditable ? t('supervisor.currentSessionCard.alreadyRecorded') : (isLate ? t('supervisor.currentSessionCard.markLate') : t('supervisor.currentSessionCard.markPresent'))}
                                         >
-                                            <Icon size={16} className={!isRecorded ? 'animate-pulse' : ''} />
-                                            <span>{Label}</span>
+                                            {isEditable ? <Pencil size={14} /> : <Icon size={16} className={!isRecorded ? 'animate-pulse' : ''} />}
+                                            <span>{isEditable ? t('common.edit', { defaultValue: 'تعديل' }) : Label}</span>
                                         </button>
                                     );
                                 })()}
@@ -219,7 +260,8 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                 />
                             </div>
                         </div>
-                        {/* boutton d'Actions */}
+                        {/* boutton d'Actions facultatifs */}
+
 
                     </div>
                 </Modal>
@@ -251,19 +293,28 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                             />
                         )}
                         {modalState.type === 'late' && (
-                            <div className={`flex items-center justify-center gap-4 py-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                                <button onClick={() => setModalState(s => ({ ...s, value: Math.max(1, s.value - 5) }))}
-                                    className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">−</button>
-                                <div className="text-center w-24">
-                                    <input type="number" value={modalState.value}
-                                        onChange={e => setModalState(s => ({ ...s, value: Math.max(1, parseInt(e.target.value) || 1) }))}
-                                        className="w-full text-center text-4xl font-black text-amber-600 border-b-2 border-amber-300 outline-none bg-transparent pb-1"
-                                        min={1}
-                                    />
-                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-2">{t('supervisor.currentSessionCard.minutes')}</p>
+                            <div className="space-y-4">
+                                <div className={`flex items-center justify-center gap-4 py-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                                    <button onClick={() => setModalState(s => ({ ...s, value: Math.max(1, s.value - 5) }))}
+                                        className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">−</button>
+                                    <div className="text-center w-24">
+                                        <input type="number" value={modalState.value}
+                                            onChange={e => setModalState(s => ({ ...s, value: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                            className="w-full text-center text-4xl font-black text-amber-600 border-b-2 border-amber-300 outline-none bg-transparent pb-1"
+                                            min={1}
+                                        />
+                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-2">{formatDuration(modalState.value)}</p>
+                                    </div>
+                                    <button onClick={() => setModalState(s => ({ ...s, value: s.value + 5 }))}
+                                        className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">+</button>
                                 </div>
-                                <button onClick={() => setModalState(s => ({ ...s, value: s.value + 5 }))}
-                                    className="w-12 h-12 bg-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-200 transition-colors text-xl shadow-sm">+</button>
+                                <textarea
+                                    value={modalState.reason}
+                                    onChange={e => setModalState(s => ({ ...s, reason: e.target.value }))}
+                                    placeholder={t('supervisor.currentSessionCard.lateReasonPlaceholder', 'Motif du retard (optionnel)')}
+                                    className={`w-full p-3 border border-gray-200 rounded-xl text-sm font-medium outline-none resize-none focus:ring-2 focus:ring-amber-200 placeholder-gray-400 ${isRtl ? 'text-right' : ''}`}
+                                    rows={2}
+                                />
                             </div>
                         )}
                         <div className={`flex gap-3 pt-2 ${isRtl ? 'flex-row-reverse' : ''}`}>

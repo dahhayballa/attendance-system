@@ -36,6 +36,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { section: t('common.navManagement'), items: [
             { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},
             { id: 'reports',     label: t('admin.sidebar.reports'),            icon: FileText,        path: '/admin/reports'   },
+            { id: 'statistics',  label: t('admin.sidebar.statistics'),         icon: BarChart3,       path: '/admin/statistics' },
         ]},
     ];
 

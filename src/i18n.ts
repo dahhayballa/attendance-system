@@ -167,7 +167,22 @@ const resources = {
         },
         settingsPage: {
           title: 'الإعدادات',
-          subtitle: 'تخصيص المظهر والإشعارات والتفضيلات',
+          subtitle: 'إدارة حسابك وتفضيلاتك',
+          sections: {
+            profile: 'الملف الشخصي',
+            security: 'الأمان',
+            preferences: 'التفضيلات',
+            dangerZone: 'إجراءات الحساب'
+          },
+          security: {
+            changePassword: 'تغيير كلمة المرور',
+            currentPassword: 'كلمة المرور الحالية',
+            newPassword: 'كلمة المرور الجديدة',
+            confirmPassword: 'تأكيد كلمة المرور',
+            updateButton: 'تحديث كلمة المرور',
+            success: 'تم تحديث كلمة المرور بنجاح',
+            error: 'فشل العملية: كلمة المرور الحالية غير صحيحة أو هناك خطأ آخر'
+          }
         },
         alertsPage: {
           title: 'التنبيهات',
@@ -513,7 +528,22 @@ const resources = {
         },
         settingsPage: {
           title: 'Paramètres',
-          subtitle: 'Personnaliser l\'apparence, les notifications et les préférences',
+          subtitle: 'Gérez votre compte et vos préférences',
+          sections: {
+            profile: 'Profil',
+            security: 'Sécurité',
+            preferences: 'Préférences',
+            dangerZone: 'Actions du compte'
+          },
+          security: {
+            changePassword: 'Changer le mot de passe',
+            currentPassword: 'Mot de passe actuel',
+            newPassword: 'Nouveau mot de passe',
+            confirmPassword: 'Confirmer le mot de passe',
+            updateButton: 'Mettre à jour',
+            success: 'Mot de passe mis à jour avec succès',
+            error: 'Échec : mot de passe actuel incorrect ou autre erreur'
+          }
         },
         alertsPage: {
           title: 'Alertes',

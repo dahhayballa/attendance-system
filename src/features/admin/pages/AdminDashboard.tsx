@@ -11,21 +11,50 @@ export const AdminDashboard: React.FC = () => {
   const [,setRecentLogs] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<{ topTeachers: any[], topClasses: any[] }>({ topTeachers: [], topClasses: [] });
   const [loading, setLoading] = useState(true);
+  
+  // Nouveaux états pour le filtrage
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
+  const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const [filterOptions, setFilterOptions] = useState<{ teachers: {label: string, value: string}[]; classes: string[]; subjects: {label: string, value: string}[] }>({ teachers: [], classes: [], subjects: [] });
+  
   const { toast } = useToast();
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsData, weeksData, logsData, analyticsData] = await Promise.all([
-        adminService.getGlobalStats(),
+
+      let finalTeacher = selectedTeacher !== 'all' ? selectedTeacher.split('|')[0] : 'all';
+      let finalSubject = selectedSubject !== 'all' ? selectedSubject.split('|')[0] : 'all';
+      
+      const implicitSubjectFromTeacher = selectedTeacher !== 'all' ? selectedTeacher.split('|')[1] : null;
+      const implicitTeacherFromSubject = selectedSubject !== 'all' ? selectedSubject.split('|')[1] : null;
+
+      if (implicitSubjectFromTeacher && finalSubject === 'all') {
+        finalSubject = implicitSubjectFromTeacher;
+      }
+      if (implicitTeacherFromSubject && finalTeacher === 'all') {
+        finalTeacher = implicitTeacherFromSubject;
+      }
+
+      const filters = {
+        teacher: finalTeacher,
+        className: selectedClass,
+        subject: finalSubject
+      };
+      
+      const [statsData, weeksData, logsData, analyticsData, optionsData] = await Promise.all([
+        adminService.getGlobalStats(filters),
         adminService.getWeeksWithCounts(),
-        adminService.getRecentLogs(),
-        adminService.getAbsenceAnalytics()
+        adminService.getRecentLogs(filters),
+        adminService.getAbsenceAnalytics(filters),
+        adminService.getFiltersOptions()
       ]);
       setStats(statsData as any);
       setWeeks(weeksData);
       setRecentLogs(logsData);
       setAnalytics(analyticsData);
+      if (optionsData) setFilterOptions(optionsData);
     } catch (error) {
       toast.error("Échec du chargement des données du tableau de bord");
     } finally {
@@ -33,7 +62,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadDashboardData(); }, []);
+  useEffect(() => { loadDashboardData(); }, [selectedTeacher, selectedClass, selectedSubject]);
 
   const handleDeleteWeek = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette semaine ?")) return;
@@ -53,21 +82,51 @@ export const AdminDashboard: React.FC = () => {
       <div className="space-y-6 pb-8" dir="ltr">
 
         {/* ── Header ── */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
               Tableau de Bord
             </h1>
             <p className="text-xs text-gray-400 font-medium mt-0.5">Vue d'ensemble de la présence</p>
           </div>
-          <button
-            onClick={loadDashboardData}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all text-xs font-bold shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
+          
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <select
+              value={selectedTeacher}
+              onChange={(e) => setSelectedTeacher(e.target.value)}
+              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
+            >
+              <option value="all">Tous les Professeurs</option>
+              {filterOptions.teachers?.map((t, idx) => <option key={idx} value={t.value}>{t.label}</option>)}
+            </select>
+            
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
+            >
+              <option value="all">Toutes les Classes</option>
+              {filterOptions.classes?.map((c, idx) => <option key={idx} value={c}>{c}</option>)}
+            </select>
+
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
+            >
+              <option value="all">Toutes les Matières</option>
+              {filterOptions.subjects?.map((s, idx) => <option key={idx} value={s.value}>{s.label}</option>)}
+            </select>
+
+            <button
+              onClick={loadDashboardData}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all text-xs font-bold shadow-sm disabled:opacity-50 shrink-0 w-full md:w-auto"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+          </div>
         </div>
 
         {/* ── Stat Cards ── */}
@@ -147,9 +206,16 @@ export const AdminDashboard: React.FC = () => {
                  {analytics.topTeachers.length > 0 ? (
                     analytics.topTeachers.map((teacher, idx) => (
                        <div key={idx} className="group">
-                          <div className="flex justify-between items-end mb-1.5">
-                             <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors uppercase tracking-tight">{teacher.name}</span>
-                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg">{teacher.count} <span className="text-[10px] opacity-70">absences</span></span>
+                          <div className="flex justify-between items-start mb-1.5">
+                             <div>
+                               <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors uppercase tracking-tight block leading-tight">{teacher.name}</span>
+                               {teacher.subject && teacher.class && (
+                                 <span className="text-[10px] font-semibold text-gray-500 mt-1 block tracking-wide">
+                                   <span className="text-gray-400">Matière:</span> <span className="text-gray-600">{teacher.subject}</span> <span className="mx-1 text-gray-300">•</span> <span className="text-gray-400">Classe:</span> <span className="text-gray-600">{teacher.class}</span>
+                                 </span>
+                               )}
+                             </div>
+                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg whitespace-nowrap">{teacher.count} <span className="text-[10px] opacity-70">absences</span></span>
                           </div>
                           <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                              <div 

@@ -1,8 +1,57 @@
 import { supabase } from './client';
 
 export const adminService = {
+  // 0. جلب خيارات الفلترة (الأساتذة، الأقسام، والمواد)
+  getFiltersOptions: async () => {
+    const { data, error } = await supabase
+      .from('schedules')
+      .select('teacher, class, subject');
+      
+    if (error) throw error;
+    
+    const classes = Array.from(new Set((data || []).map(s => s.class).filter(Boolean))).sort() as string[];
+
+    const teacherSubjectPairs = new Set<string>();
+    const subjectTeacherPairs = new Set<string>();
+
+    (data || []).forEach(s => {
+      if (s.teacher && s.subject) {
+        teacherSubjectPairs.add(`${s.teacher}|${s.subject}`);
+        subjectTeacherPairs.add(`${s.subject}|${s.teacher}`);
+      } else if (s.teacher) {
+        teacherSubjectPairs.add(`${s.teacher}|`);
+      } else if (s.subject) {
+        subjectTeacherPairs.add(`${s.subject}|`);
+      }
+    });
+
+    const teachers = Array.from(teacherSubjectPairs).map(pair => {
+      const [teacher, subject] = pair.split('|');
+      return {
+        value: pair,
+        label: subject ? `${teacher} (${subject})` : teacher
+      };
+    }).sort((a, b) => {
+      if (a.label === b.label) return 0;
+      return a.label > b.label ? 1 : -1;
+    });
+
+    const subjects = Array.from(subjectTeacherPairs).map(pair => {
+      const [subject, teacher] = pair.split('|');
+      return {
+        value: pair,
+        label: teacher ? `${subject} (${teacher})` : subject
+      };
+    }).sort((a, b) => {
+      if (a.label === b.label) return 0;
+      return a.label > b.label ? 1 : -1;
+    });
+    
+    return { teachers, classes, subjects };
+  },
+
   // 1. جلب إحصائيات عامة للوحة التحكم (مع خيارات الفلترة)
-  getGlobalStats: async (filters?: { day?: string; weekId?: string }) => {
+  getGlobalStats: async (filters?: { day?: string; weekId?: string; teacher?: string; className?: string; subject?: string }) => {
     let query = supabase.from('schedules').select('status');
 
     if (filters?.day && filters.day !== 'all') {
@@ -11,6 +60,18 @@ export const adminService = {
 
     if (filters?.weekId && filters.weekId !== 'all') {
       query = query.eq('week_id', filters.weekId);
+    }
+
+    if (filters?.teacher && filters.teacher !== 'all') {
+      query = query.eq('teacher', filters.teacher);
+    }
+
+    if (filters?.className && filters.className !== 'all') {
+      query = query.eq('class', filters.className);
+    }
+
+    if (filters?.subject && filters.subject !== 'all') {
+      query = query.eq('subject', filters.subject);
     }
 
     const { data, error } = await query;
@@ -92,9 +153,9 @@ export const adminService = {
   },
 
   // 4. جلب آخر النشاطات (مع المشرفين المعينين)
-  getRecentLogs: async () => {
+  getRecentLogs: async (filters?: { teacher?: string; className?: string; subject?: string }) => {
     // جلب السجلات
-    const { data: logsData, error: logsError } = await supabase
+    let logsQuery = supabase
       .from('attendance_logs')
       .select(`
         id,
@@ -103,7 +164,19 @@ export const adminService = {
         schedule_id,
         schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject),
         user:users!attendance_logs_recorded_by_fkey(name, email)
-      `)
+      `);
+
+    if (filters?.teacher && filters.teacher !== 'all') {
+      logsQuery = logsQuery.filter('schedule.teacher', 'eq', filters.teacher);
+    }
+    if (filters?.className && filters.className !== 'all') {
+      logsQuery = logsQuery.filter('schedule.class', 'eq', filters.className);
+    }
+    if (filters?.subject && filters.subject !== 'all') {
+      logsQuery = logsQuery.filter('schedule.subject', 'eq', filters.subject);
+    }
+
+    const { data: logsData, error: logsError } = await logsQuery
       .order('recorded_at', { ascending: false })
       .limit(50);
 
@@ -126,6 +199,8 @@ export const adminService = {
 
     for (const item of (logsData || [])) {
       const log = item as any;
+      if (!log.schedule) continue; // تم تصفيته بواسطة Foreign Table Filter
+      
       if (!seenSchedules.has(log.schedule_id)) {
         // البحث عن المشرفين المعينين لهذا القسم أو المادة (مع معالجة احتمال كون الربط مصفوفة أو كائن)
         const assignedSupervisors = assignments
@@ -245,32 +320,56 @@ export const adminService = {
   },
 
   // 6. جلب تحليلات الغياب (المناطق الأكثر تضرراً)
-  getAbsenceAnalytics: async (filters?: { weekId?: string }) => {
+  getAbsenceAnalytics: async (filters?: { weekId?: string; teacher?: string; className?: string; subject?: string }) => {
     let query = supabase
       .from('attendance_logs')
       .select(`
         status,
-        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, week_id)
+        recorded_at,
+        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject, week_id)
       `)
       .eq('status', 'absent');
 
     if (filters?.weekId && filters.weekId !== 'all') {
-      // نفلتر حسب الأسبوع من خلال الجدول المرتبط
       query = query.filter('schedule.week_id', 'eq', filters.weekId);
+    }
+    if (filters?.teacher && filters.teacher !== 'all') {
+      query = query.filter('schedule.teacher', 'eq', filters.teacher);
+    }
+    if (filters?.className && filters.className !== 'all') {
+      query = query.filter('schedule.class', 'eq', filters.className);
+    }
+    if (filters?.subject && filters.subject !== 'all') {
+      query = query.filter('schedule.subject', 'eq', filters.subject);
     }
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const teacherAbsences: Record<string, number> = {};
+    const teacherAbsences: Record<string, { count: number; name: string; subject: string; class: string }> = {};
     const classAbsences: Record<string, number> = {};
+    const teacherAbsenceEvents = new Set<string>();
 
     data?.forEach((log: any) => {
       const teacher = log.schedule?.teacher;
       const className = log.schedule?.class;
+      const subject = log.schedule?.subject || '';
+      const date = log.recorded_at ? log.recorded_at.split('T')[0] : '';
 
       if (teacher) {
-        teacherAbsences[teacher] = (teacherAbsences[teacher] || 0) + 1;
+        // مفتاح التجميع سيكون (الاسم + المادة + القسم)
+        const teacherKey = `${teacher}|${subject}|${className}`;
+        
+        // مفتاح الحدث للتأكد من حساب غياب يوم واحد للحصة/المادة كحدث واحد
+        const eventKey = `${teacherKey}_${date}`;
+        
+        if (!teacherAbsenceEvents.has(eventKey)) {
+          teacherAbsenceEvents.add(eventKey);
+          if (!teacherAbsences[teacherKey]) {
+            teacherAbsences[teacherKey] = { count: 0, name: teacher, subject, class: className };
+          }
+          teacherAbsences[teacherKey].count += 1;
+        }
       }
       if (className) {
         classAbsences[className] = (classAbsences[className] || 0) + 1;
@@ -278,8 +377,7 @@ export const adminService = {
     });
 
     // تحويل الكائنات إلى مصفوفات مرتبة
-    const topTeachers = Object.entries(teacherAbsences)
-      .map(([name, count]) => ({ name, count }))
+    const topTeachers = Object.values(teacherAbsences)
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 

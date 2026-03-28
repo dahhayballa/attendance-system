@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import SupervisorLayout from '../components/SupervisorLayout';
 import SettingsPanel from '../components/SettingsPanel';
 

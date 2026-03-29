@@ -239,7 +239,7 @@ export const adminService = {
 
     // 1. جلب حصص اليوم المختار (أو تصفية حسب الأسبوع)
     let schedQuery = supabase.from('schedules').select('id');
-    
+      
     if (filters?.day && filters.day !== 'all') {
       schedQuery = schedQuery.eq('day', filters.day);
     } else if (!filters?.weekId || filters.weekId === 'all') {

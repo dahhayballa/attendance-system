@@ -96,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) => setSelectedTeacher(e.target.value)}
               className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
             >
-              <option value="all">Tous les Professeurs</option>
+              <option value="all">Les Professeurs</option>
               {filterOptions.teachers?.map((t, idx) => <option key={idx} value={t.value}>{t.label}</option>)}
             </select>
             
@@ -105,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) => setSelectedClass(e.target.value)}
               className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
             >
-              <option value="all">Toutes les Classes</option>
+              <option value="all">les Classes</option>
               {filterOptions.classes?.map((c, idx) => <option key={idx} value={c}>{c}</option>)}
             </select>
 
@@ -114,7 +114,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
             >
-              <option value="all">Toutes les Matières</option>
+              <option value="all">Les Matières</option>
               {filterOptions.subjects?.map((s, idx) => <option key={idx} value={s.value}>{s.label}</option>)}
             </select>
 

@@ -151,7 +151,65 @@ const resources = {
             calendar: 'التقويم الأسبوعي',
             teachers: 'تحليل الأساتذة',
             trends: 'الاتجاهات',
+            classes: 'التحليل حسب الفصول',
+            subjects: 'التحليل حسب المواد'
           },
+          labels: {
+            filters: 'الفلاتر',
+            close: 'إغلاق',
+            reset: 'إعادة تعيين',
+            day: 'يوم',
+            week: 'أسبوع',
+            month: 'شهر',
+            byClass: 'حسب القسم',
+            teacher: 'الأستاذ',
+            subject: 'المادة',
+            class: 'القسم',
+            allTeachers: 'جميع الأساتذة',
+            allSubjects: 'جميع المواد',
+            allClasses: 'جميع الأقسام'
+          },
+          kpi: {
+            totalSessions: 'إجمالي الحصص',
+            totalPresent: 'إجمالي الحاضرين',
+            onTime: 'في الوقت',
+            late: 'متأخرات',
+            absent: 'إجمالي الغيابات'
+          },
+          charts: {
+            overallRate: 'Taux Global',
+            presenceRepartition: 'Assiduité',
+            presenceRepartitionSub: 'Répartition globale en pourcentage entre le nombre de présents et d\'absents.',
+            topPresence: 'أعلى 5 حضور',
+            topPresenceSub: 'أفضل الحصص من حيث الحضور المنتظم.',
+            riskZones: 'مناطق الخطر',
+            riskZonesSub: 'تحديد المواد الأكثر تأثراً بغياب الأساتذة.',
+            impactBySubject: 'التأثير حسب المادة',
+            criticalSubject: 'المادة الحرجة',
+            presenceEvolution: 'تطور الحضور',
+            presenceEvolutionSub: 'منحنى النشاط اليومي للحصص المسجلة.',
+            activityLabel: 'النشاط خلال آخر {{count}} أيام',
+            activityDay: 'النشاط لهذا اليوم الحصري',
+            totalSessionsSub: 'إجمالي عدد الحصص المبرمجة للفترة المختارة.',
+            onTimeSub: 'عدد الحصص التي حضرها الأستاذ في الموعد المحدد.',
+            lateSub: 'عدد الحصص التي تأخر فيها الأستاذ عن البداية.',
+            absentSub: 'إجمالي عدد الغيابات المسجلة (مبررة أو غير مبررة).'
+          },
+          alerts: {
+            title: 'التنبيهات الأخيرة',
+            subtitle: 'كشف الأنماط والسلوكيات غير العادية بشكل فوري',
+            recentCount: 'لديك {{count}} تنبيهات حرجة',
+            comingSoon: 'سيتم عرض قائمة التنبيهات التفصيلية هنا بناءً على الخوارزميات الذكية.'
+          },
+          modal: {
+            detailedStats: 'إحصائيات مفصلة',
+            back: 'العودة للوحة التحكم',
+            presenceRate: 'معدل الحضور',
+            totalSessions: 'إجمالي الحصص',
+            onTime: 'حاضرون (في الوقت)',
+            late: 'حاضرون (متأخرون)',
+            absent: 'الغيابات المتراكمة'
+          }
         },
         reportsPage: {
           title: 'التقارير والسجلات',
@@ -513,7 +571,65 @@ const resources = {
             calendar: 'Calendrier hebdomadaire',
             teachers: 'Analyse des enseignants',
             trends: 'Tendances',
+            classes: 'Analyse par classes',
+            subjects: 'Analyse par matières'
           },
+          labels: {
+            filters: 'FILTRES',
+            close: 'FERMER',
+            reset: 'RÉINITIALISER',
+            day: 'JOUR',
+            week: 'SEMAINE',
+            month: 'MOIS',
+            byClass: 'par Classe',
+            teacher: 'Professeur',
+            subject: 'Matière',
+            class: 'Classe',
+            allTeachers: 'TOUS LES PROFS',
+            allSubjects: 'TOUTES LES MATIÈRES',
+            allClasses: 'TOUTES LES CLASSES'
+          },
+          kpi: {
+            totalSessions: 'Total Séances',
+            totalPresent: 'Total Présents',
+            onTime: 'À l\'heure',
+            late: 'Retards',
+            absent: 'Total Absents'
+          },
+          charts: {
+            overallRate: 'Taux Global',
+            presenceRepartition: 'Assiduité',
+            presenceRepartitionSub: 'Répartition globale en pourcentage entre le nombre de présents et d\'absents.',
+            topPresence: 'Top 5 Présences',
+            topPresenceSub: 'Aperçu de la présence régulière par groupe de classe.',
+            riskZones: 'Zones à risques',
+            riskZonesSub: 'Identification des matières les plus impactées par les absences enseignants.',
+            impactBySubject: 'Impact par Matière',
+            criticalSubject: 'Matière Critique',
+            presenceEvolution: 'Évolution Présence',
+            presenceEvolutionSub: 'Courbe d\'activité journalière des séances enregistrées.',
+            activityLabel: 'Activité sur les {{count}} derniers jours',
+            activityDay: 'Activité pour cette journée uniquement',
+            totalSessionsSub: 'Nombre total de séances programmées sur la période.',
+            onTimeSub: 'Séances où le professeur était présent à l\'heure.',
+            lateSub: 'Séances marquées par un retard.',
+            absentSub: 'Total des absences enregistrées (justifiées ou non).'
+          },
+          alerts: {
+            title: 'Alertes Récentes',
+            subtitle: 'Détection instantanée des anomalies et des patterns',
+            recentCount: 'Vous avez {{count}} alertes critiques',
+            comingSoon: 'La liste détaillée des alertes sera affichée ici selon les algorithmes de détection.'
+          },
+          modal: {
+            detailedStats: 'Statistiques détaillées',
+            back: 'Revenir au dashboard',
+            presenceRate: 'Taux de présence',
+            totalSessions: 'Total Séances',
+            onTime: 'Présents (à l\'heure)',
+            late: 'Présents (en retard)',
+            absent: 'Absences cumulées'
+          }
         },
         reportsPage: {
           title: 'Rapports et enregistrements',

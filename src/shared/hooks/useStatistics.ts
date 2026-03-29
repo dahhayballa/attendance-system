@@ -4,9 +4,11 @@ import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useRole } from '../../features/auth/hooks/useRole';
 
 export interface StatsKPI {
+    totalSessions: number;
     totalPresence: number;
-    totalLate: number;
-    totalAbsent: number;
+    onTime: number;
+    late: number;
+    absent: number;
     totalCriticalAlerts: number;
 }
 
@@ -34,7 +36,7 @@ export interface DailyTrend {
 
 export interface GroupedStat {
     name: string;
-    present: number;
+    onTime: number;
     late: number;
     absent: number;
     total: number;
@@ -72,7 +74,7 @@ export interface StatisticsData {
     error: string | null;
 }
 
-const INITIAL_KPIS: StatsKPI = { totalPresence: 0, totalLate: 0, totalAbsent: 0, totalCriticalAlerts: 0 };
+const INITIAL_KPIS: StatsKPI = { totalSessions: 0, totalPresence: 0, onTime: 0, late: 0, absent: 0, totalCriticalAlerts: 0 };
 const INITIAL_RATES: StatsRates = { presenceRate: 0, lateRate: 0, absenceRate: 0 };
 
 export const useStatistics = () => {
@@ -258,24 +260,25 @@ export const useStatistics = () => {
 
             // Advanced metrics calculations
             const total = filteredLogs.length;
-            const presence = filteredLogs.filter(l => l.status === 'present').length;
+            const onTime = filteredLogs.filter(l => l.status === 'present').length;
             const late = filteredLogs.filter(l => l.status === 'late').length;
             const absent = filteredLogs.filter(l => l.status === 'absent' || l.status === 'absent_justified').length;
             
-            const totalPoints = filteredLogs.reduce((acc, l) => acc + (l.points || 0), 0);
-            const totalDelay = filteredLogs.reduce((acc, l) => acc + (l.late_minutes || 0), 0);
+            const totalPresence = onTime + late;
 
             const criticalAlerts = (alertsData || []).filter(a => a.severity === 'critical').length;
 
             const kpis: StatsKPI = {
-                totalPresence: presence,
-                totalLate: late,
-                totalAbsent: absent,
+                totalSessions: total,
+                totalPresence: totalPresence,
+                onTime: onTime,
+                late: late,
+                absent: absent,
                 totalCriticalAlerts: criticalAlerts
             };
 
             const rates: StatsRates = {
-                presenceRate: total > 0 ? Math.round((presence / total) * 100) : 0,
+                presenceRate: total > 0 ? Math.round((totalPresence / total) * 100) : 0,
                 lateRate: total > 0 ? Math.round((late / total) * 100) : 0,
                 absenceRate: total > 0 ? Math.round((absent / total) * 100) : 0,
             };
@@ -306,8 +309,8 @@ export const useStatistics = () => {
                 byTeacher,
                 bySubject,
                 advanced: {
-                    avgPoints: total > 0 ? Math.round(totalPoints / total) : 0,
-                    avgDelay: late > 0 ? Math.round(totalDelay / late) : 0,
+                    avgPoints: 0,
+                    avgDelay: 0,
                     totalNotifications: advNotificationCount,
                     unreadNotifications: advUnreadCount,
                 },
@@ -361,7 +364,7 @@ function processDailyTrend(logs: any[], daysCount: number, referenceDate: Date):
  * Helper to process grouped stats (classes or teachers)
  */
 function processGroupedStats(logs: any[], key: 'class_name' | 'teacher_name' | 'subject'): GroupedStat[] {
-    const groups: Record<string, { present: number, late: number, absent: number, total: number }> = {};
+    const groups: Record<string, { onTime: number, late: number, absent: number, total: number }> = {};
 
     logs.forEach(log => {
         const sched = log.schedules as any;
@@ -375,11 +378,11 @@ function processGroupedStats(logs: any[], key: 'class_name' | 'teacher_name' | '
                 : (sched.subject || 'Sujet Inconnu');
 
         if (!groups[groupName]) {
-            groups[groupName] = { present: 0, late: 0, absent: 0, total: 0 };
+            groups[groupName] = { onTime: 0, late: 0, absent: 0, total: 0 };
         }
 
         groups[groupName].total++;
-        if (log.status === 'present') groups[groupName].present++;
+        if (log.status === 'present') groups[groupName].onTime++;
         else if (log.status === 'late') groups[groupName].late++;
         else if (log.status === 'absent' || log.status === 'absent_justified') groups[groupName].absent++;
     });
@@ -387,6 +390,6 @@ function processGroupedStats(logs: any[], key: 'class_name' | 'teacher_name' | '
     return Object.entries(groups).map(([name, stats]) => ({
         name,
         ...stats,
-        rate: stats.total > 0 ? Math.round(((stats.present + stats.late) / stats.total) * 100) : 0
+        rate: stats.total > 0 ? Math.round(((stats.onTime + stats.late) / stats.total) * 100) : 0
     })).sort((a, b) => b.total - a.total);
 }

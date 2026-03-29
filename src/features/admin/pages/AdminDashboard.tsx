@@ -105,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) => setSelectedClass(e.target.value)}
               className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
             >
-              <option value="all">les Classes</option>
+              <option value="all">Les Classes</option>
               {filterOptions.classes?.map((c, idx) => <option key={idx} value={c}>{c}</option>)}
             </select>
 

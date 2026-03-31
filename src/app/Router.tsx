@@ -4,6 +4,7 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import AdminDashboard from '../features/admin/pages/AdminDashboard';
 import AdminReportsPage from '../features/admin/pages/ReportsPage';
 import SupervisorAssignmentsPage from '../features/admin/pages/SupervisorAssignmentsPage';
+import UsersManagementPage from '../features/admin/pages/UsersManagementPage';
 import LiveDashboardPage from '../features/admin/pages/LiveDashboardPage';
 import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
 import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
@@ -66,6 +67,14 @@ export const Router = () => {
                 element={
                     <ProtectedRoute requireRole="admin">
                         <SupervisorAssignmentsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/users"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <UsersManagementPage />
                     </ProtectedRoute>
                 }
             />

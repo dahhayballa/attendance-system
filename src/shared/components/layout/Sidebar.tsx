@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     Home, BarChart3, Settings,
     LayoutDashboard, Activity, Shield, FileText,
-    X, ChevronRight, History, Calendar
+    X, ChevronRight, History, Calendar, Users
 } from 'lucide-react';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         ]},
         { section: t('common.navManagement'), items: [
             { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},
+            { id: 'users',       label: t('admin.sidebar.users'),              icon: Users,           path: '/admin/users'},
             { id: 'reports',     label: t('admin.sidebar.reports'),            icon: FileText,        path: '/admin/reports'   },
             { id: 'statistics',  label: t('admin.sidebar.statistics'),         icon: BarChart3,       path: '/admin/statistics' },
         ]},

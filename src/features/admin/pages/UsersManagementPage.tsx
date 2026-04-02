@@ -65,10 +65,21 @@ export const UsersManagementPage: React.FC = () => {
   };
 
   const handleDeactivate = async (id: string) => {
-    if (!window.confirm(t('admin.usersManagement.deleteConfirm'))) return;
+    if (!window.confirm(t('admin.usersManagement.deleteConfirm') || "Voulez-vous désactiver cet utilisateur ?")) return;
     try {
       await usersService.deactivateUser(id);
-      toast.success(t('admin.usersManagement.deleteSuccess'));
+      toast.success(t('admin.usersManagement.deleteSuccess') || "Désactivé avec succès");
+      loadUsers();
+    } catch (error) {
+      toast.error(t('admin.usersManagement.error'));
+    }
+  };
+
+  const handleReactivate = async (user: User) => {
+    if (!window.confirm("Voulez-vous réactiver cet utilisateur ?")) return;
+    try {
+      await usersService.reactivateUser(user.id, user.name || '');
+      toast.success("Réactivé avec succès");
       loadUsers();
     } catch (error) {
       toast.error(t('admin.usersManagement.error'));
@@ -176,7 +187,7 @@ export const UsersManagementPage: React.FC = () => {
                   <div>
                     <div className="flex justify-between items-start mb-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden flex-shrink-0">
-                         <span className="font-black text-xl text-gray-400">{user.name?.charAt(0).toUpperCase() || '?'}</span>
+                         <span className="font-black text-xl text-gray-400">{(user.name?.replace('[DÉSACTIVÉ] ', '').charAt(0).toUpperCase()) || '?'}</span>
                       </div>
                       <div className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5 ${
                         user.role === 'supervisor' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
@@ -186,8 +197,16 @@ export const UsersManagementPage: React.FC = () => {
                       </div>
                     </div>
                     
-                    <h3 className="text-lg font-black text-gray-900 group-hover:text-orange-600 transition-colors truncate">{user.name || 'Sans Nom'}</h3>
+                    <h3 className="text-lg font-black text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                      {user.name?.replace('[DÉSACTIVÉ] ', '').replace('[DÉSACTIVÉ]', '') || 'Sans Nom'}
+                    </h3>
                     <p className="text-sm font-medium text-gray-400 truncate mt-0.5">{user.email}</p>
+                    
+                    {user.name?.startsWith('[DÉSACTIVÉ]') && (
+                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">
+                        <UserMinus size={10} /> Désactivé
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 mt-6 pt-4 border-t border-gray-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
@@ -197,12 +216,21 @@ export const UsersManagementPage: React.FC = () => {
                     >
                       <Edit3 size={14} /> Éditer
                     </button>
-                    <button 
-                       onClick={() => handleDeactivate(user.id)}
-                       className="flex-1 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-500 py-2 rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1.5"
-                    >
-                      <UserMinus size={14} /> Désactiver
-                    </button>
+                    {user.name?.startsWith('[DÉSACTIVÉ]') ? (
+                      <button 
+                         onClick={() => handleReactivate(user)}
+                         className="flex-1 bg-gray-50 hover:bg-emerald-50 text-gray-600 hover:text-emerald-600 py-2 rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1.5"
+                      >
+                        <UserPlus size={14} /> Activer
+                      </button>
+                    ) : (
+                      <button 
+                         onClick={() => handleDeactivate(user.id)}
+                         className="flex-1 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-500 py-2 rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1.5"
+                      >
+                        <UserMinus size={14} /> Désactiver
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

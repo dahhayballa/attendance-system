@@ -140,11 +140,44 @@ export const usersService = {
     return data;
   },
 
-  // 4. Désactiver un utilisateur (retire ses droits)
+  // 4. Désactiver un utilisateur (retire ses droits visuels et bannit le login)
   deactivateUser: async (id: string) => {
+    // 1. Récupérer l'utilisateur pour modifier son nom afin de ne pas toucher au rôle
+    const { data: user } = await supabase.from('users').select('name').eq('id', id).single();
+    if (!user) throw new Error('Utilisateur introuvable');
+
+    // 2. Bannir du point de vue de Auth pour empêcher la connexion
+    if (SUPABASE_SERVICE_ROLE_KEY) {
+      const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      await adminClient.auth.admin.updateUserById(id, { ban_duration: '876000h' });
+    }
+
+    // 3. Marquer comme désactivé via le nom (contourne l'erreur SQL 400 de NOT NULL sur role)
+    const newName = user.name.startsWith('[DÉSACTIVÉ]') ? user.name : `[DÉSACTIVÉ] ${user.name}`;
     const { error } = await supabase
       .from('users')
-      .update({ role: null })
+      .update({ name: newName }) // Pas d'erreur 400 !
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  },
+
+  // 5. Réactiver un utilisateur
+  reactivateUser: async (id: string, currentName: string) => {
+    if (SUPABASE_SERVICE_ROLE_KEY) {
+      const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      await adminClient.auth.admin.updateUserById(id, { ban_duration: 'none' });
+    }
+
+    const newName = currentName.replace('[DÉSACTIVÉ] ', '').replace('[DÉSACTIVÉ]', '');
+    const { error } = await supabase
+      .from('users')
+      .update({ name: newName })
       .eq('id', id);
 
     if (error) throw error;

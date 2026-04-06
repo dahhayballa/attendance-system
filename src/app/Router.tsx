@@ -9,6 +9,7 @@ import LiveDashboardPage from '../features/admin/pages/LiveDashboardPage';
 import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
 import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
 import ActionHistoryPage from '../features/supervisor/pages/ActionHistoryPage';
+import DailyAttendanceManagerPage from '../features/admin/pages/DailyAttendanceManagerPage';
 import StatisticsPage from '../shared/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
@@ -59,6 +60,14 @@ export const Router = () => {
                 element={
                     <ProtectedRoute requireRole="admin">
                         <LiveDashboardPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/daily"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <DailyAttendanceManagerPage />
                     </ProtectedRoute>
                 }
             />

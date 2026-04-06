@@ -60,6 +60,55 @@ export const recordAttendance = async (
 };
 
 /**
+ * Marquer automatiquement absent les séances terminées non pointées.
+ * Cette fonction ne touche que les séances encore en "pending".
+ */
+export const autoMarkEndedSessionsAbsent = async (
+    schedules: Schedule[],
+    currentMinutes: number
+): Promise<number> => {
+    const toMarkAbsent = schedules.filter(s => {
+        const status = (s.status || 'pending').toString().toLowerCase();
+        if (status !== 'pending') return false;
+        const [eh, em] = (s.time_end || '00:00').split(':').map(Number);
+        const endMinutes = eh * 60 + em;
+        return currentMinutes >= endMinutes;
+    });
+
+    if (toMarkAbsent.length === 0) return 0;
+
+    const nowIso = new Date().toISOString();
+    const ids = toMarkAbsent.map(s => s.id);
+
+    const { error: updateError } = await supabase
+        .from('schedules')
+        .update({
+            status: 'absent',
+            recorded_by: null,
+            recorded_at: nowIso,
+        })
+        .in('id', ids);
+
+    if (updateError) throw updateError;
+
+    const logs = ids.map(id => ({
+        schedule_id: id,
+        recorded_by: null,
+        status: 'absent' as const,
+        recorded_at: nowIso,
+        reason: 'Absence automatique: séance terminée sans pointage',
+    }));
+
+    const { error: logsError } = await supabase
+        .from('attendance_logs')
+        .insert(logs);
+
+    if (logsError) throw logsError;
+
+    return ids.length;
+};
+
+/**
  * Récupérer les logs de présence récents
  */
 export const getRecentAttendance = async (limit = 20): Promise<Attendance[]> => {

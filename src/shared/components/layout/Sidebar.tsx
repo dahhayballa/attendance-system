@@ -33,6 +33,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { section: t('common.navDashboard'), items: [
             { id: 'dashboard',   label: t('admin.sidebar.dashboard'),    icon: LayoutDashboard, path: '/admin'            },
             { id: 'live',        label: t('admin.sidebar.liveDashboard'),    icon: Activity,        path: '/admin/live'       },
+            { id: 'daily',       label: 'Gestion Quotidienne',               icon: Calendar,        path: '/admin/daily'      },
         ]},
         { section: t('common.navManagement'), items: [
             { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},

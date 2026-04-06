@@ -3,6 +3,7 @@ import { supabase } from '../../../services/supabase/client';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import type { Schedule } from '../types';
+import { autoMarkEndedSessionsAbsent } from '../services/attendanceService';
 
 interface CurrentSessionState {
     currentSession: Schedule | null;
@@ -182,7 +183,22 @@ export const useCurrentSession = () => {
                 }
             }
 
-            let rowsToProcess = scopedRows;
+            // Auto-absent must run on the full scoped day list (not only current/visible subset).
+            const currentMinutes = getSchoolCurrentMinutes();
+            const autoMarkedCount = await autoMarkEndedSessionsAbsent(scopedRows, currentMinutes);
+
+            const scopedRowsAfterAuto = autoMarkedCount > 0
+                ? scopedRows.map(s => {
+                    const [eh, em] = (s.time_end || '00:00').split(':').map(Number);
+                    const endMinutes = eh * 60 + em;
+                    if ((s.status === 'pending' || !s.status) && currentMinutes >= endMinutes) {
+                        return { ...s, status: 'absent' } as Schedule;
+                    }
+                    return s;
+                })
+                : scopedRows;
+
+            let rowsToProcess = scopedRowsAfterAuto;
             if (rowsToProcess.length > 0) {
                 lastNonEmptyRowsRef.current = rowsToProcess;
             } else if (lastNonEmptyRowsRef.current.length > 0) {

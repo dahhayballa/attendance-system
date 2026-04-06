@@ -30,6 +30,8 @@ export interface LogsFilters {
     limit?: number;
     weekId?: string;
     supervisorId?: string;
+    fromDate?: string;
+    toDate?: string;
 }
 
 // 2. جلب سجلات الحضور مع تفاصيل الأساتذة والفصول
@@ -45,6 +47,13 @@ export const getAttendanceLogs = async (filters: LogsFilters = {}): Promise<Atte
             user:users!attendance_logs_recorded_by_fkey(name, email)
         `)
         .order('recorded_at', { ascending: false });
+
+    if (filters.fromDate) {
+        query = query.gte('recorded_at', filters.fromDate);
+    }
+    if (filters.toDate) {
+        query = query.lte('recorded_at', filters.toDate);
+    }
 
     if (filters.limit) {
         query = query.limit(filters.limit * 5); // زيادة العدد للتصفية محلياً

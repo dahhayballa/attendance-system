@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getSchedules, recordAttendance, getTodayStats } from '../services/attendanceService';
 import type { Schedule, FilterOptions } from '../types';
 import { useAuth } from '../../auth/hooks/useAuth';

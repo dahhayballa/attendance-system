@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../services/supabase/client';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import SupervisorLayout from '../components/SupervisorLayout';
 import CurrentSessionCard from '../components/CurrentSessionCard';
 import {
@@ -24,6 +25,7 @@ const Dashboard = () => {
     const { t, i18n } = useTranslation();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { activeWeek } = useActiveWeek();
     const [stats, setStats]             = useState({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
     const [nextSession, setNextSession] = useState<any>(null);
     const [loading, setLoading]         = useState(true);
@@ -57,25 +59,46 @@ const Dashboard = () => {
                 query = query.eq('pointer', user.name);
             }
 
-            const { data } = await query;
+            const { data: scheds } = await query;
 
-            if (data) {
-                const total   = data.length;
-                const present = data.filter(s => s.status === 'present').length;
-                const absent  = data.filter(s => s.status === 'absent').length;
-                const late    = data.filter(s => s.status === 'late').length;
+            if (scheds && scheds.length > 0) {
+                const total = scheds.length;
+                const scheduleIds = scheds.map(s => s.id);
+                
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+
+                const { data: logsData } = await supabase
+                    .from('attendance_logs')
+                    .select('schedule_id, status')
+                    .in('schedule_id', scheduleIds)
+                    .gte('recorded_at', startOfToday.toISOString())
+                    .order('recorded_at', { ascending: false });
+
+                const uniqueLogs = new Map<string, string>();
+                logsData?.forEach((log: any) => {
+                    if (!uniqueLogs.has(log.schedule_id)) uniqueLogs.set(log.schedule_id, log.status);
+                });
+
+                const present = Array.from(uniqueLogs.values()).filter(s => s === 'present' || s === 'completed').length;
+                const absent = Array.from(uniqueLogs.values()).filter(s => s === 'absent').length;
+                const late = Array.from(uniqueLogs.values()).filter(s => s === 'late').length;
+
                 setStats({ total, present, absent, late, pending: total - present - absent - late });
 
-                const upcoming = data
+                const upcoming = scheds
                     .filter(s => {
                         const [h, m] = (s.time_start ?? '00:00').split(':').map(Number);
                         return h * 60 + m > nowMin;
                     })
                     .sort((a: any, b: any) => a.time_start.localeCompare(b.time_start));
                 setNextSession(upcoming[0] ?? null);
+            } else {
+                setStats({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
+                setNextSession(null);
             }
         } finally { setLoading(false); }
-    }, [user?.name]);
+    }, [user?.name, activeWeek?.id]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 

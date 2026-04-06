@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 export interface BadgeProps {
     children: ReactNode;
-    variant?: 'info' | 'success' | 'warning' | 'danger' | 'primary' | 'pending' | 'present' | 'absent';
+    variant?: 'info' | 'success' | 'warning' | 'danger' | 'primary' | 'pending' | 'present' | 'absent' | 'late' | 'excused';
     className?: string;
 }
 
@@ -15,7 +15,9 @@ export const Badge = ({ children, variant = 'info', className = '' }: BadgeProps
         primary: 'bg-blue-100 text-blue-800',
         pending: 'bg-yellow-100 text-yellow-800',
         present: 'bg-green-100 text-green-800',
-        absent: 'bg-red-100 text-red-800'
+        absent: 'bg-red-100 text-red-800',
+        late: 'bg-orange-100 text-orange-800',
+        excused: 'bg-purple-100 text-purple-800'
     };
 
     return (

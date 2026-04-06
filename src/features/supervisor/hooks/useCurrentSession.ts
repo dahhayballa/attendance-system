@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase/client';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import type { Schedule } from '../types';
 
 interface CurrentSessionState {
@@ -15,6 +16,7 @@ interface CurrentSessionState {
 
 export const useCurrentSession = () => {
     const { user } = useAuth();
+    const { activeWeek } = useActiveWeek();
     const [state, setState] = useState<CurrentSessionState>({
         currentSession: null,
         nextSession: null,
@@ -85,6 +87,10 @@ export const useCurrentSession = () => {
                 .eq('day', todayName)
                 .order('time_start', { ascending: true });
 
+            if (activeWeek?.id) {
+                query = query.eq('week_id', activeWeek.id);
+            }
+
             if (user?.role === 'supervisor' && user?.name) {
                 query = query.eq('pointer', user.name);
             }
@@ -96,7 +102,7 @@ export const useCurrentSession = () => {
             console.error('[useCurrentSession] Erreur:', err);
             setState(prev => ({ ...prev, loading: false, error: 'Erreur de chargement' }));
         }
-    }, [processSchedules, user?.role, user?.name]);
+    }, [processSchedules, user?.role, user?.name, activeWeek?.id]);
 
     useEffect(() => {
         fetchSchedules();

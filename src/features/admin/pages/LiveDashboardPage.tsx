@@ -4,6 +4,7 @@ import { realtimeService } from '../../../services/supabase/realtime.service';
 import Card from '../../../shared/components/ui/Card';
 import { Clock, Activity, AlertTriangle, UserCheck, XCircle, Users } from 'lucide-react';
 import { adminService } from '../../../services/supabase/admin.service';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 
 export const LiveDashboardPage = () => {
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
@@ -13,16 +14,14 @@ export const LiveDashboardPage = () => {
         const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         return daysFr[new Date().getDay()];
     });
-    const [selectedWeek, setSelectedWeek] = useState('all');
+    useActiveWeek();
+    const [selectedWeek] = useState('all');
 
     useEffect(() => {
         const initWeeks = async () => {
             try {
                 const weeksData = await adminService.getWeeksWithCounts();
                 setWeeks(weeksData);
-                if (weeksData.length > 0 && selectedWeek === 'all') {
-                    setSelectedWeek(weeksData[0].id);
-                }
             } catch (err) {
                 console.error(err);
             }
@@ -44,11 +43,50 @@ export const LiveDashboardPage = () => {
         };
     }, [selectedDay, selectedWeek]);
 
+    const getExactTimeRange = () => {
+        if (selectedDay === 'all') return undefined;
+
+        let baseStart: Date;
+
+        if (selectedWeek === 'all') {
+            const now = new Date();
+            const currentDayOfWeek = now.getDay();
+            const diffToMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+            baseStart = new Date(now);
+            baseStart.setDate(now.getDate() - diffToMonday);
+            baseStart.setHours(0, 0, 0, 0);
+        } else {
+            const targetWeek = weeks.find(w => w.id === selectedWeek);
+            if (!targetWeek || !targetWeek.start_date) return undefined;
+            baseStart = new Date(targetWeek.start_date);
+            baseStart.setHours(0, 0, 0, 0);
+        }
+
+        const daysFrList = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const dayIndex = daysFrList.indexOf(selectedDay);
+        
+        if (dayIndex !== -1) {
+            const start = new Date(baseStart);
+            start.setDate(start.getDate() + dayIndex);
+            
+            const end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+            
+            return {
+                exactDateStart: start.toISOString(),
+                exactDateEnd: end.toISOString()
+            };
+        }
+        return undefined;
+    };
+
     const loadData = async () => {
         try {
+            const timeRange = getExactTimeRange();
+            
             const [alertsData, statsData] = await Promise.all([
-                adminService.getLiveAlerts({ day: selectedDay, weekId: selectedWeek }),
-                adminService.getGlobalStats({ day: selectedDay, weekId: selectedWeek })
+                adminService.getLiveAlerts({ day: selectedDay, weekId: selectedWeek, ...timeRange }),
+                adminService.getGlobalStats({ day: selectedDay, weekId: selectedWeek, isLive: true, ...timeRange })
             ]);
 
             setRecentLogs(alertsData);
@@ -95,14 +133,14 @@ export const LiveDashboardPage = () => {
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0">
                             <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Semaine</label>
-                                <select
+                                {/* <select
                                     value={selectedWeek}
                                     onChange={(e) => setSelectedWeek(e.target.value)}
                                     className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 transition-all font-bold text-gray-700 min-w-[160px] cursor-pointer"
                                 >
                                     <option value="all">Toutes les semaines</option>
                                     {weeks.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                </select>
+                                </select> */}
                             </div>
 
                             <div className="flex flex-col gap-1">

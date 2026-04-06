@@ -51,8 +51,8 @@ export const adminService = {
   },
 
   // 1. جلب إحصائيات عامة للوحة التحكم (مع خيارات الفلترة)
-  getGlobalStats: async (filters?: { day?: string; weekId?: string; teacher?: string; className?: string; subject?: string }) => {
-    let query = supabase.from('schedules').select('status');
+  getGlobalStats: async (filters?: { day?: string; weekId?: string; teacher?: string; className?: string; subject?: string; isLive?: boolean; exactDateStart?: string; exactDateEnd?: string }) => {
+    let query = supabase.from('schedules').select('id, status');
 
     if (filters?.day && filters.day !== 'all') {
       query = query.eq('day', filters.day);
@@ -74,14 +74,67 @@ export const adminService = {
       query = query.eq('subject', filters.subject);
     }
 
-    const { data, error } = await query;
+    const { data: schedData, error } = await query;
 
     if (error) throw error;
 
-    const total = data?.length || 0;
-    const present = data?.filter(d => d.status === 'present').length || 0;
-    const late = data?.filter(d => d.status === 'late').length || 0;
-    const absent = data?.filter(d => d.status === 'absent').length || 0;
+    const total = schedData?.length || 0;
+
+    if (filters?.isLive) {
+      if (total === 0) {
+        return { total, present: 0, late: 0, absent: 0, recorded: 0, rate: 0 };
+      }
+      
+      const scheduleIds = schedData.map(s => s.id);
+      let logsQuery = supabase
+        .from('attendance_logs')
+        .select('schedule_id, status')
+        .in('schedule_id', scheduleIds)
+        .order('recorded_at', { ascending: false });
+
+      if (filters.exactDateStart) {
+        logsQuery = logsQuery.gte('recorded_at', filters.exactDateStart);
+      } else {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        logsQuery = logsQuery.gte('recorded_at', todayStart.toISOString());
+      }
+
+      if (filters.exactDateEnd) {
+        logsQuery = logsQuery.lte('recorded_at', filters.exactDateEnd);
+      }
+
+      const { data: logsData, error: logsErr } = await logsQuery;
+
+      if (logsErr) throw logsErr;
+
+      // Only count latest log per schedule for today
+      const uniqueLogs = new Map<string, string>();
+      logsData?.forEach(log => {
+        if (!uniqueLogs.has(log.schedule_id)) {
+          uniqueLogs.set(log.schedule_id, log.status);
+        }
+      });
+
+      const present = Array.from(uniqueLogs.values()).filter(s => s === 'present').length;
+      const late = Array.from(uniqueLogs.values()).filter(s => s === 'late').length;
+      const absent = Array.from(uniqueLogs.values()).filter(s => s === 'absent').length;
+      const recorded = present + late + absent;
+
+      return {
+        total,
+        present,
+        late,
+        absent,
+        recorded,
+        rate: total > 0 ? Math.round(((present + late) / total) * 100) : 0
+      };
+    }
+
+    // Default behavior for Admin Dashboard
+    const present = schedData?.filter(d => d.status === 'present').length || 0;
+    const late = schedData?.filter(d => d.status === 'late').length || 0;
+    const absent = schedData?.filter(d => d.status === 'absent').length || 0;
     const recorded = present + late + absent;
 
     return {
@@ -153,7 +206,7 @@ export const adminService = {
   },
 
   // 4. جلب آخر النشاطات (مع المشرفين المعينين)
-  getRecentLogs: async (filters?: { teacher?: string; className?: string; subject?: string }) => {
+  getRecentLogs: async (filters?: { weekId?: string; teacher?: string; className?: string; subject?: string }) => {
     // جلب السجلات
     let logsQuery = supabase
       .from('attendance_logs')
@@ -162,10 +215,13 @@ export const adminService = {
         status,
         recorded_at,
         schedule_id,
-        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject),
+        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject, week_id),
         user:users!attendance_logs_recorded_by_fkey(name, email)
       `);
 
+    if (filters?.weekId && filters.weekId !== 'all') {
+      logsQuery = logsQuery.filter('schedule.week_id', 'eq', filters.weekId);
+    }
     if (filters?.teacher && filters.teacher !== 'all') {
       logsQuery = logsQuery.filter('schedule.teacher', 'eq', filters.teacher);
     }
@@ -233,7 +289,7 @@ export const adminService = {
   },
 
   // 5. جلب تنبيهات البث المباشر (مع خيارات الفلترة)
-  getLiveAlerts: async (filters?: { day?: string; weekId?: string }) => {
+  getLiveAlerts: async (filters?: { day?: string; weekId?: string; exactDateStart?: string; exactDateEnd?: string }) => {
     const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const todayFr = daysFr[new Date().getDay()];
 
@@ -258,7 +314,7 @@ export const adminService = {
     if (scheduleIds.length === 0) return [];
 
     // 2. جلب السجلات لهذه الحصص (حالة غياب أو تأخر أو حضور)
-    const { data: logsData, error: logsError } = await supabase
+    let logsQuery = supabase
       .from('attendance_logs')
       .select(`
         id,
@@ -271,6 +327,20 @@ export const adminService = {
       .in('schedule_id', scheduleIds)
       .in('status', ['absent', 'late', 'present'])
       .order('recorded_at', { ascending: false });
+
+    if (filters?.exactDateStart) {
+      logsQuery = logsQuery.gte('recorded_at', filters.exactDateStart);
+    } else {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      logsQuery = logsQuery.gte('recorded_at', todayStart.toISOString());
+    }
+
+    if (filters?.exactDateEnd) {
+      logsQuery = logsQuery.lte('recorded_at', filters.exactDateEnd);
+    }
+
+    const { data: logsData, error: logsError } = await logsQuery;
 
     if (logsError) throw logsError;
 

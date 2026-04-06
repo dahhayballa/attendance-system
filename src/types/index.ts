@@ -1,4 +1,4 @@
-﻿export interface User {
+export interface User {
     id: string;
     email: string;
     name?: string;
@@ -29,9 +29,10 @@ export interface AttendanceLog {
     id: string;
     schedule_id: string;
     user_id: string;
-    status: 'present' | 'absent';
+    status: 'present' | 'absent' | 'late' | 'excused';
     created_at: string;
     teacher_name?: string;
+    class_name?: string;
     subject?: string;
     user_name?: string;
     schedule?: {

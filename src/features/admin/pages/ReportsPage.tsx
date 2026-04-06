@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Layout } from '../../../shared/components/layout/Layout';
 import Card from '../../../shared/components/ui/Card';
 import Button from '../../../shared/components/ui/Button';
@@ -34,11 +34,18 @@ export const ReportsPage = () => {
                     fromDate = start.toISOString();
                     toDate = end.toISOString();
                 } else if (activeTab === 'weekly') {
-                    // 7 days ago
-                    const start = new Date();
-                    start.setDate(now.getDate() - 7);
-                    start.setHours(0, 0, 0);
-                    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                    // Start of current week (Monday)
+                    const dayOfWeek = now.getDay();
+                    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                    
+                    const start = new Date(now);
+                    start.setDate(now.getDate() - diffToMonday);
+                    start.setHours(0, 0, 0, 0);
+                    
+                    const end = new Date(start);
+                    end.setDate(start.getDate() + 6);
+                    end.setHours(23, 59, 59, 999);
+                    
                     fromDate = start.toISOString();
                     toDate = end.toISOString();
                 }
@@ -95,10 +102,17 @@ export const ReportsPage = () => {
         if (activeTab !== 'weekly') return [];
         const daysMap: Record<string, { presents: number, absents: number, lates: number }> = {};
         
-        // Initialiser les 7 derniers jours
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+        // Calculate start of week (Monday)
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - diffToMonday);
+
+        // Initialiser les jours de la semaine (Lundi au Dimanche)
+        for (let i = 0; i <= 6; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
             const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
             daysMap[dateStr] = { presents: 0, absents: 0, lates: 0 };
         }

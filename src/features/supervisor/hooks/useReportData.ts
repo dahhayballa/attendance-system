@@ -1,5 +1,6 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 
 /* ═══════════ Types ═══════════ */
 
@@ -81,6 +82,7 @@ const DAY_NAME = (d: Date) => {
  * Hook pour générer les données d'un rapport d'attendance.
  */
 export const useReportData = () => {
+    const { activeWeek } = useActiveWeek();
     const [config, setConfig] = useState<ReportConfig>(DEFAULT_CONFIG);
     const [report, setReport] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -97,7 +99,9 @@ export const useReportData = () => {
                     next.endDate = next.startDate;
                 } else if (partial.periodType === 'weekly') {
                     const start = new Date(now);
-                    start.setDate(now.getDate() - now.getDay());
+                    const dayOfWeek = now.getDay();
+                    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                    start.setDate(now.getDate() - diffToMonday);
                     const end = new Date(start);
                     end.setDate(start.getDate() + 6);
                     next.startDate = start.toISOString().split('T')[0];
@@ -123,6 +127,10 @@ export const useReportData = () => {
 
             // Récupérer les données
             let query = supabase.from('schedules').select('*');
+
+            if (activeWeek?.id) {
+                query = query.eq('week_id', activeWeek.id);
+            }
 
             if (config.periodType === 'daily') {
                 query = query.eq('day', targetDay);
@@ -229,7 +237,7 @@ export const useReportData = () => {
         } finally {
             setLoading(false);
         }
-    }, [config]);
+    }, [config, activeWeek?.id]);
 
     return { config, updateConfig, report, loading, error, generateReport };
 };

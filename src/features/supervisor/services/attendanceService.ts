@@ -1,16 +1,17 @@
-﻿import { supabase } from '../../../services/supabase/client';
+import { supabase } from '../../../services/supabase/client';
 import type { Attendance, Schedule, FilterOptions } from '../types';
 
 /**
  * Récupérer les emplois du temps avec filtres optionnels
  */
-export const getSchedules = async (filters?: Partial<FilterOptions>): Promise<Schedule[]> => {
+export const getSchedules = async (filters?: Partial<FilterOptions>, weekId?: string): Promise<Schedule[]> => {
     let query = supabase
         .from('schedules')
         .select('*')
         .order('day', { ascending: true })
         .order('time_start', { ascending: true });
 
+    if (weekId) query = query.eq('week_id', weekId);
     if (filters?.day) query = query.eq('day', filters.day);
     if (filters?.class) query = query.eq('class', filters.class);
     if (filters?.teacher) query = query.ilike('teacher', `%${filters.teacher}%`);
@@ -81,14 +82,20 @@ export const getRecentAttendance = async (limit = 20): Promise<Attendance[]> => 
 /**
  * Statistiques rapides de la journée
  */
-export const getTodayStats = async () => {
+export const getTodayStats = async (weekId?: string) => {
     const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const today = days[new Date().getDay()];
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('schedules')
         .select('status')
         .eq('day', today);
+
+    if (weekId) {
+        query = query.eq('week_id', weekId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

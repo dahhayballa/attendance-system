@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../services/supabase/client';
 import type { FilterOptions } from '../types';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 
 /* ═══════════ Types ═══════════ */
 
@@ -50,6 +51,7 @@ interface UseAttendanceDataReturn {
 export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttendanceDataReturn => {
     const { filters, page, pageSize, sortField, sortDir, statusFilter } = options;
     const { user } = useAuth();
+    const { activeWeek } = useActiveWeek();
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -64,6 +66,10 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
             let query = supabase
                 .from('schedules')
                 .select('*', { count: 'exact' });
+
+            if (activeWeek?.id) {
+                query = query.eq('week_id', activeWeek.id);
+            }
 
             // Appliquer les filtres
             if (filters.day) query = query.eq('day', filters.day);
@@ -120,7 +126,7 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
         } finally {
             setLoading(false);
         }
-    }, [filters, page, pageSize, sortField, sortDir, statusFilter]);
+    }, [filters, page, pageSize, sortField, sortDir, statusFilter, activeWeek?.id]);
 
     useEffect(() => {
         fetchData();

@@ -13,6 +13,7 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   // Nouveaux états pour le filtrage
+  const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
@@ -37,21 +38,61 @@ export const AdminDashboard: React.FC = () => {
         finalTeacher = implicitTeacherFromSubject;
       }
 
+      const fetchedWeeks = await adminService.getWeeksWithCounts();
+
+      let exactDateStart: string | undefined;
+      let exactDateEnd: string | undefined;
+
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      
+      const start = new Date(now);
+      start.setDate(now.getDate() - diffToMonday);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+
+      let targetWeekId: string | undefined = undefined;
+
+      if (selectedWeek !== 'all') {
+          const target = fetchedWeeks.find(w => w.id === selectedWeek);
+          if (target && target.start_date) {
+              targetWeekId = target.id;
+              const tgtStart = new Date(target.start_date);
+              tgtStart.setHours(0, 0, 0, 0);
+              start.setTime(tgtStart.getTime());
+              
+              const tgtEnd = new Date(tgtStart);
+              tgtEnd.setDate(tgtStart.getDate() + 6);
+              tgtEnd.setHours(23, 59, 59, 999);
+              end.setTime(tgtEnd.getTime());
+          }
+      }
+
+      exactDateStart = start.toISOString();
+      exactDateEnd = end.toISOString();
+
       const filters = {
+        weekId: targetWeekId,
         teacher: finalTeacher,
         className: selectedClass,
-        subject: finalSubject
+        subject: finalSubject,
+        isLive: true,
+        exactDateStart,
+        exactDateEnd
       };
       
-      const [statsData, weeksData, logsData, analyticsData, optionsData] = await Promise.all([
+      const [statsData, logsData, analyticsData, optionsData] = await Promise.all([
         adminService.getGlobalStats(filters),
-        adminService.getWeeksWithCounts(),
         adminService.getRecentLogs(filters),
         adminService.getAbsenceAnalytics(filters),
         adminService.getFiltersOptions()
       ]);
       setStats(statsData as any);
-      setWeeks(weeksData);
+      setWeeks(fetchedWeeks);
       setRecentLogs(logsData);
       setAnalytics(analyticsData);
       if (optionsData) setFilterOptions(optionsData);
@@ -62,7 +103,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadDashboardData(); }, [selectedTeacher, selectedClass, selectedSubject]);
+  useEffect(() => { loadDashboardData(); }, [selectedWeek, selectedTeacher, selectedClass, selectedSubject]);
 
   const handleDeleteWeek = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette semaine ?")) return;
@@ -91,6 +132,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {/* <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
+            >
+              <option value="all">Toutes les semaines</option>
+              {weeks.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select> */}
+
             <select
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}

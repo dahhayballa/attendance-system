@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase/client';
+import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 
 /* ═══════════ Types ═══════════ */
 
@@ -49,6 +50,7 @@ const SETTINGS_KEY = 'supervisor_alert_settings';
 /* ═══════════ Hook ═══════════ */
 
 export const useAlerts = () => {
+    const { activeWeek } = useActiveWeek();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [settings, setSettings] = useState<AlertSettings>(DEFAULT_SETTINGS);
     const [loading, setLoading] = useState(true);
@@ -83,11 +85,17 @@ export const useAlerts = () => {
     const generateAlerts = useCallback(async () => {
         try {
             const todayName = getTodayName();
-            const { data: schedules, error } = await supabase
+            let query = supabase
                 .from('schedules')
                 .select('*')
                 .eq('day', todayName)
                 .order('time_start', { ascending: true });
+
+            if (activeWeek?.id) {
+                query = query.eq('week_id', activeWeek.id);
+            }
+
+            const { data: schedules, error } = await query;
 
             if (error) throw error;
             if (!schedules) return;
@@ -262,7 +270,7 @@ export const useAlerts = () => {
             console.error('[useAlerts] Erreur:', err);
             setLoading(false);
         }
-    }, [settings]);
+    }, [settings, activeWeek?.id]);
 
     // Initial fetch + interval
     useEffect(() => {

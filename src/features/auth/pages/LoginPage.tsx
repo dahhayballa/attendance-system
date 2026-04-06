@@ -34,6 +34,30 @@ export const LoginPage = () => {
         return !Object.values(newErrors).some(error => error !== null);
     };
 
+    const getLoginErrorMessage = (error: any): string => {
+        const msg = error?.message?.toLowerCase() || '';
+        const status = error?.status;
+
+        // User banned (disabled account)
+        if (msg.includes('banned') || msg.includes('user is banned')) {
+            return t('auth.accountDisabled');
+        }
+        // Invalid credentials
+        if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+            return t('auth.invalidCredentials');
+        }
+        // Email not confirmed / not found
+        if (msg.includes('email not confirmed') || msg.includes('user not found')) {
+            return t('auth.emailNotFound');
+        }
+        // Rate limited
+        if (status === 429 || msg.includes('rate limit') || msg.includes('too many requests')) {
+            return t('auth.tooManyAttempts');
+        }
+        // Generic fallback
+        return t('auth.loginFailed');
+    };
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setAuthError(null);
@@ -46,7 +70,7 @@ export const LoginPage = () => {
             const { data, error } = await login(email, password);
 
             if (error) {
-                setAuthError(error.message || 'فشل تسجيل الدخول. يرجى التحقق من بياناتك.');
+                setAuthError(getLoginErrorMessage(error));
                 return;
             }
 
@@ -74,7 +98,7 @@ export const LoginPage = () => {
             navigate(targetPath, { replace: true });
 
         } catch (err: any) {
-            setAuthError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+            setAuthError(t('auth.unexpectedError'));
         } finally {
             setIsLoading(false);
         }

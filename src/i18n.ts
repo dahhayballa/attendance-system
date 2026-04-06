@@ -28,6 +28,10 @@ const resources = {
         loginButton: 'تسجيل الدخول ',
         loginFailed: 'فشل تسجيل الدخول. يرجى التحقق من بياناتك.',
         unexpectedError: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+        invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        accountDisabled: 'هذا الحساب معطل. يرجى التواصل مع المسؤول.',
+        emailNotFound: 'لا يوجد حساب بهذا البريد الإلكتروني.',
+        tooManyAttempts: 'محاولات كثيرة. يرجى الانتظار قليلاً ثم إعادة المحاولة.',
       },
       header: {
         toggleSidebar: 'تبديل القائمة الجانبية',
@@ -590,6 +594,10 @@ const resources = {
         loginButton: 'Se connecter',
         loginFailed: 'Échec de la connexion. Veuillez vérifier vos identifiants.',
         unexpectedError: 'Une erreur inattendue est survenue. Veuillez réessayer.',
+        invalidCredentials: 'E-mail ou mot de passe incorrect.',
+        accountDisabled: 'Ce compte est désactivé. Veuillez contacter l\'administrateur.',
+        emailNotFound: 'Aucun compte trouvé avec cet e-mail.',
+        tooManyAttempts: 'Trop de tentatives. Veuillez patienter puis réessayer.',
       },
       header: {
         toggleSidebar: 'Basculer le menu latéral',

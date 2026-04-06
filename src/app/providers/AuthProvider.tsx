@@ -107,7 +107,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    */
   const login = async (email: string, password: string) => {
     try {
-      setLoading(true);
       const authData = await loginWithEmail(email, password);
       
       if (authData?.user) {
@@ -132,8 +131,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return { data: authData, error: null };
     } catch (error: any) {
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
 

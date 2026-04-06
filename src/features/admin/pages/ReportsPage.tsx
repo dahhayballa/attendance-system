@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout } from '../../../shared/components/layout/Layout';
 import Card from '../../../shared/components/ui/Card';
 import Button from '../../../shared/components/ui/Button';
@@ -12,6 +13,7 @@ import { AttendanceLog } from '../../../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 export const ReportsPage = () => {
+    const { t } = useTranslation();
     // TABS: daily, weekly, history
     const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'history'>('daily');
     const [logs, setLogs] = useState<AttendanceLog[]>([]);
@@ -76,7 +78,7 @@ export const ReportsPage = () => {
         // Group by teacher for absences
         const absentTeachers: Record<string, number> = {};
         logs.filter(l => l.status === 'absent' || l.status === 'late').forEach(l => {
-            const name = l.teacher_name || 'Inconnu';
+            const name = l.teacher_name || t('admin.reports.table.teacher');
             absentTeachers[name] = (absentTeachers[name] || 0) + (l.status === 'absent' ? 1 : 0.5); // late = 0.5 absence
         });
         
@@ -87,7 +89,7 @@ export const ReportsPage = () => {
         // Group by class 
         const impactedClasses: Record<string, number> = {};
         logs.filter(l => l.status === 'absent').forEach(l => {
-            const className = l.class_name || 'Inconnue';
+            const className = l.class_name || t('admin.reports.table.classSubject');
             impactedClasses[className] = (impactedClasses[className] || 0) + 1;
         });
         const topClasses = Object.entries(impactedClasses)
@@ -129,9 +131,9 @@ export const ReportsPage = () => {
 
         return Object.entries(daysMap).map(([name, counts]) => ({
             name,
-            Présents: counts.presents,
-            Absents: counts.absents,
-            Retards: counts.lates
+            [t('admin.reports.status.present')]: counts.presents,
+            [t('admin.reports.status.absent')]: counts.absents,
+            [t('admin.reports.status.late')]: counts.lates
         }));
     }, [logs, activeTab]);
 
@@ -145,13 +147,13 @@ export const ReportsPage = () => {
 
     const exportToExcel = () => {
         const dataToExport = filteredLogs.map(log => ({
-            'Date': formatDate(log.created_at),
-            'Heure': formatTime(log.created_at),
-            'Superviseur': log.user_name,
-            'Professeur': log.teacher_name,
-            'Matière': log.subject,
+            [t('admin.reports.table.date')]: formatDate(log.created_at),
+            [t('admin.reports.table.time')]: formatTime(log.created_at),
+            [t('admin.reports.table.supervisor')]: log.user_name,
+            [t('admin.reports.table.teacher')]: log.teacher_name,
+            [t('admin.reports.table.subject')]: log.subject,
             'Classe': log.class_name,
-            'Statut': log.status === 'present' ? 'Présent' : log.status === 'absent' ? 'Absent' : log.status === 'late' ? 'Retard' : 'Motif'
+            [t('admin.reports.table.status')]: log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : t('admin.reports.status.excused')
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -168,7 +170,7 @@ export const ReportsPage = () => {
                 <Card className="bg-gradient-to-br from-white to-blue-50/50 border-blue-100 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Sessions</p>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t('admin.reports.statTotalSessions')}</p>
                             <h3 className="text-3xl font-black text-blue-700 mt-2">{currentStats.total}</h3>
                         </div>
                         <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
@@ -180,7 +182,7 @@ export const ReportsPage = () => {
                 <Card className="bg-gradient-to-br from-white to-emerald-50/50 border-emerald-100 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Taux Présence</p>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t('admin.reports.statAttendanceRate')}</p>
                             <h3 className="text-3xl font-black text-emerald-700 mt-2">{currentStats.rate}%</h3>
                         </div>
                         <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl">
@@ -192,7 +194,7 @@ export const ReportsPage = () => {
                 <Card className="bg-gradient-to-br from-white to-red-50/50 border-red-100 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Absences</p>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t('admin.reports.statAbsences')}</p>
                             <h3 className="text-3xl font-black text-red-700 mt-2">{currentStats.absents}</h3>
                         </div>
                         <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
@@ -204,7 +206,7 @@ export const ReportsPage = () => {
                 <Card className="bg-gradient-to-br from-white to-amber-50/50 border-amber-100 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Retards</p>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t('admin.reports.statLates')}</p>
                             <h3 className="text-3xl font-black text-amber-700 mt-2">{currentStats.lates}</h3>
                         </div>
                         <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl">
@@ -219,7 +221,7 @@ export const ReportsPage = () => {
                 {activeTab === 'weekly' && (
                     <Card className="lg:col-span-2 shadow-sm border-gray-100">
                         <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                            <BarChart3 className="text-orange-500" /> Évolution sur 7 jours
+                            <BarChart3 className="text-orange-500" /> {t('admin.reports.chartTitle')}
                         </h3>
                         <div className="h-72">
                             <ResponsiveContainer width="100%" height="100%">
@@ -232,9 +234,9 @@ export const ReportsPage = () => {
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} 
                                     />
                                     <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Bar dataKey="Présents" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                    <Bar dataKey="Absents" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                    <Bar dataKey="Retards" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                    <Bar dataKey={t('admin.reports.status.present')} fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                    <Bar dataKey={t('admin.reports.status.absent')} fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                    <Bar dataKey={t('admin.reports.status.late')} fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -244,7 +246,7 @@ export const ReportsPage = () => {
                 {/* Top Absences */}
                 <Card className={`${activeTab === 'weekly' ? 'lg:col-span-1' : 'lg:col-span-2'} shadow-sm border-gray-100`}>
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <AlertTriangle className="text-red-500" /> Professeurs les plus absents
+                        <AlertTriangle className="text-red-500" /> {t('admin.reports.topAbsentsTitle')}
                     </h3>
                     
                     {currentStats.topAbsents.length > 0 ? (
@@ -253,7 +255,7 @@ export const ReportsPage = () => {
                                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                     <div className="font-bold text-gray-700">{name}</div>
                                     <div className="font-bold text-red-600 bg-red-100 px-3 py-1 rounded-lg">
-                                        {count} Fois
+                                        {t('admin.reports.absenceTimes', { count: count })}
                                     </div>
                                 </div>
                             ))}
@@ -261,7 +263,7 @@ export const ReportsPage = () => {
                     ) : (
                         <div className="text-center p-8 bg-gray-50 rounded-xl text-gray-400 font-medium">
                             <CheckCircle2 size={32} className="mx-auto text-emerald-300 mb-2" />
-                            Aucune absence signalée
+                            {t('admin.reports.noAbsences')}
                         </div>
                     )}
                 </Card>
@@ -269,7 +271,7 @@ export const ReportsPage = () => {
                 {/* Top Classes Impactées */}
                 <Card className="lg:col-span-1 shadow-sm border-gray-100">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Users className="text-blue-500" /> Classes touchées (Absences)
+                        <Users className="text-blue-500" /> {t('admin.reports.topClassesTitle')}
                     </h3>
                     
                     {currentStats.topClasses.length > 0 ? (
@@ -278,23 +280,23 @@ export const ReportsPage = () => {
                                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                     <div className="font-bold text-gray-700">{className}</div>
                                     <div className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-lg">
-                                        {count} Séances
+                                        {count} {t('admin.reports.sessionsSuffix')}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
                         <div className="text-center p-8 bg-gray-50 rounded-xl text-gray-400 font-medium">
-                            Toutes les classes sont couvertes
+                            {t('admin.reports.allClassesCovered')}
                         </div>
                     )}
                 </Card>
             </div>
-            
+
             {/* Quick Listing for Dashboard */}
             <Card className="shadow-sm border-gray-100 p-0 overflow-hidden">
                 <div className="p-5 border-b border-gray-100 bg-white">
-                    <h3 className="text-lg font-bold text-gray-800">Derniers Enregistrements</h3>
+                    <h3 className="text-lg font-bold text-gray-800">{t('admin.reports.latestRecords')}</h3>
                 </div>
                 {renderTableList()}
             </Card>
@@ -308,12 +310,12 @@ export const ReportsPage = () => {
             <table className="w-full text-left text-sm">
                 <thead className="text-xs text-gray-500 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th scope="col" className="px-6 py-4 font-bold">Date</th>
-                        <th scope="col" className="px-6 py-4 font-bold">Heure</th>
-                        <th scope="col" className="px-6 py-4 font-bold">Professeur</th>
-                        <th scope="col" className="px-6 py-4 font-bold">Classe & Matière</th>
-                        <th scope="col" className="px-6 py-4 font-bold">Superviseur</th>
-                        <th scope="col" className="px-6 py-4 font-bold">Statut</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.date')}</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.time')}</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.teacher')}</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.classSubject')}</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.supervisor')}</th>
+                        <th scope="col" className="px-6 py-4 font-bold">{t('admin.reports.table.status')}</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -340,7 +342,7 @@ export const ReportsPage = () => {
                                 </td>
                                 <td className="px-6 py-4 text-gray-500 font-medium">{log.user_name}</td>
                                 <td className="px-6 py-4">
-                                    <Badge variant={log.status}>{log.status === 'present' ? 'Présent' : log.status === 'absent' ? 'Absent' : log.status === 'late' ? 'Retard' : 'Motif'}</Badge>
+                                    <Badge variant={log.status}>{log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : t('admin.reports.status.excused')}</Badge>
                                 </td>
                             </tr>
                         ))
@@ -350,8 +352,8 @@ export const ReportsPage = () => {
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Search size={24} className="text-gray-300" />
                                 </div>
-                                <h3 className="font-bold text-gray-600 mb-1">Aucun résultat</h3>
-                                <p className="text-gray-400 text-sm">Aucune donnée pour cette période.</p>
+                                <h3 className="font-bold text-gray-600 mb-1">{t('admin.reports.noResults')}</h3>
+                                <p className="text-gray-400 text-sm">{t('admin.reports.noDataPeriod')}</p>
                             </td>
                         </tr>
                     )}
@@ -370,11 +372,11 @@ export const ReportsPage = () => {
                             <FileText size={28} className="stroke-[2.5]" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Espace Rapports</h2>
+                            <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('admin.reports.pageTitle')}</h2>
                             <p className="text-sm font-medium text-gray-500 mt-1">
-                                {activeTab === 'daily' ? "Que se passe-t-il aujourd'hui ?" : 
-                                 activeTab === 'weekly' ? "Bilan des 7 derniers jours" : 
-                                 "Historique complet des opérations"}
+                                {activeTab === 'daily' ? t('admin.reports.subtitleToday') : 
+                                 activeTab === 'weekly' ? t('admin.reports.subtitleWeek') : 
+                                 t('admin.reports.subtitleHistory')}
                             </p>
                         </div>
                     </div>
@@ -385,7 +387,7 @@ export const ReportsPage = () => {
                         leftIcon={<Download size={18} />}
                         className="bg-gray-900 hover:bg-black text-white disabled:bg-gray-300 border-transparent shadow-lg shadow-gray-900/20 whitespace-nowrap rounded-xl font-bold"
                     >
-                        Export Excel
+                        {t('admin.reports.exportBtn')}
                     </Button>
                 </div>
 
@@ -395,19 +397,19 @@ export const ReportsPage = () => {
                         onClick={() => setActiveTab('daily')}
                         className={`flex-1 sm:flex-none flex items-center gap-2 justify-center px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'daily' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
                     >
-                        <Calendar size={18} /> Aujourd'hui
+                        <Calendar size={18} /> {t('admin.reports.tabToday')}
                     </button>
                     <button 
                         onClick={() => setActiveTab('weekly')}
                         className={`flex-1 sm:flex-none flex items-center gap-2 justify-center px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'weekly' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
                     >
-                        <BarChart3 size={18} /> Cette Semaine
+                        <BarChart3 size={18} /> {t('admin.reports.tabWeek')}
                     </button>
                     <button 
                         onClick={() => setActiveTab('history')}
                         className={`flex-1 sm:flex-none flex items-center gap-2 justify-center px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'history' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
                     >
-                        <FileText size={18} /> Historique
+                        <FileText size={18} /> {t('admin.reports.tabHistory')}
                     </button>
                 </div>
 
@@ -417,7 +419,7 @@ export const ReportsPage = () => {
                         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center">
                             <div className="w-full md:w-96 relative">
                                 <Input
-                                    placeholder="Rechercher nom, classe..."
+                                    placeholder={t('admin.reports.searchPlaceholderHistory')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     leftIcon={<Search className="h-4 w-4 text-gray-400" />}
@@ -427,7 +429,7 @@ export const ReportsPage = () => {
                         </div>
                         {renderTableList()}
                         <div className="p-4 border-t border-gray-100 bg-gray-50/50 font-medium text-xs text-gray-500 text-center">
-                            Total: {filteredLogs.length} enregistrements
+                            {t('admin.reports.totalRecords', { count: filteredLogs.length })}
                         </div>
                     </Card>
                 )}

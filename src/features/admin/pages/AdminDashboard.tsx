@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WeekUploader } from '../components/WeekUploader';
 import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
@@ -6,6 +7,7 @@ import {  Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp } fro
 import { Layout } from '../../../shared/components/layout/Layout';
 
 export const AdminDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, recorded: 0, rate: 0 });
   const [weeks, setWeeks] = useState<any[]>([]);
   const [,setRecentLogs] = useState<any[]>([]);
@@ -97,7 +99,7 @@ export const AdminDashboard: React.FC = () => {
       setAnalytics(analyticsData);
       if (optionsData) setFilterOptions(optionsData);
     } catch (error) {
-      toast.error("Échec du chargement des données du tableau de bord");
+      toast.error(t('admin.dashboard.loadError'));
     } finally {
       setLoading(false);
     }
@@ -106,13 +108,13 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => { loadDashboardData(); }, [selectedWeek, selectedTeacher, selectedClass, selectedSubject]);
 
   const handleDeleteWeek = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette semaine ?")) return;
+    if (!window.confirm(t('admin.dashboard.deleteWeekConfirm'))) return;
     try {
       await adminService.deleteWeek(id);
-      toast.success("Semaine supprimée avec succès");
+      toast.success(t('admin.dashboard.deleteWeekSuccess'));
       loadDashboardData();
     } catch (error) {
-      toast.error("Une erreur est survenue lors de la suppression");
+      toast.error(t('admin.dashboard.deleteWeekError'));
     }
   };
 
@@ -126,9 +128,9 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
-              Tableau de Bord
+              {t('admin.dashboard.pageTitle')}
             </h1>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">Vue d'ensemble de la présence</p>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">{t('admin.dashboard.pageSubtitle')}</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -182,31 +184,31 @@ export const AdminDashboard: React.FC = () => {
         {/* ── Stat Cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
           <StatCard
-            title="Total Séances"
+            title={t('admin.dashboard.statTotalSessions')}
             value={stats.total}
             icon={<Calendar size={16} />}
             accent="orange"
           />
           <StatCard
-            title="Présents"
+            title={t('admin.dashboard.statPresent')}
             value={stats.present}
             icon={<CheckCircle size={16} />}
             accent="green"
           />
           <StatCard
-            title="Absents"
+            title={t('admin.dashboard.statAbsent')}
             value={stats.absent}
             icon={<XCircle size={16} />}
             accent="red"
           />
           <StatCard
-            title="En Retard"
+            title={t('admin.dashboard.statLate')}
             value={stats.late || 0}
             icon={<Clock size={16} />}
             accent="amber"
           />
           <StatCard
-            title="Taux Présence"
+            title={t('admin.dashboard.statRate')}
             value={`${stats.rate}%`}
             icon={<TrendingUp size={16} />}
             accent="blue"
@@ -219,10 +221,10 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-orange-500" />
-              <span className="text-sm font-bold text-gray-800">Progression des Enregistrements</span>
+              <span className="text-sm font-bold text-gray-800">{t('admin.dashboard.progressTitle')}</span>
             </div>
             <span className="text-xs font-black text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1 rounded-lg">
-              {stats.recorded} / {stats.total} séances
+              {t('admin.dashboard.progressSessions', { recorded: stats.recorded, total: stats.total })}
             </span>
           </div>
 
@@ -235,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
 
           <div className="flex justify-between items-center mt-2">
             <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">
-              Taux d'achèvement global
+              {t('admin.dashboard.progressLabel')}
             </span>
             <span className="text-xs font-black text-orange-500">{progressPercent}%</span>
           </div>
@@ -248,7 +250,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                  <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-red-500" />
-                    <span className="font-bold text-gray-800 text-sm">Professeurs (Récurrence d'absence)</span>
+                    <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.teachersAbsenceTitle')}</span>
                  </div>
                  <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-md font-bold uppercase border border-red-100">Top 5</span>
               </div>
@@ -261,11 +263,11 @@ export const AdminDashboard: React.FC = () => {
                                <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors uppercase tracking-tight block leading-tight">{teacher.name}</span>
                                {teacher.subject && teacher.class && (
                                  <span className="text-[10px] font-semibold text-gray-500 mt-1 block tracking-wide">
-                                   <span className="text-gray-400">Matière:</span> <span className="text-gray-600">{teacher.subject}</span> <span className="mx-1 text-gray-300">•</span> <span className="text-gray-400">Classe:</span> <span className="text-gray-600">{teacher.class}</span>
+                                   <span className="text-gray-400">{t('admin.dashboard.subjectLabel')}:</span> <span className="text-gray-600">{teacher.subject}</span> <span className="mx-1 text-gray-300">•</span> <span className="text-gray-400">{t('admin.dashboard.classLabel')}:</span> <span className="text-gray-600">{teacher.class}</span>
                                  </span>
                                )}
                              </div>
-                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg whitespace-nowrap">{teacher.count} <span className="text-[10px] opacity-70">absences</span></span>
+                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg whitespace-nowrap">{teacher.count} <span className="text-[10px] opacity-70">{t('admin.dashboard.absencesCount', { count: teacher.count })}</span></span>
                           </div>
                           <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                              <div 
@@ -276,7 +278,7 @@ export const AdminDashboard: React.FC = () => {
                        </div>
                     ))
                  ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">Aucune absence enregistrée.</div>
+                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">{t('admin.dashboard.noAbsences')}</div>
                  )}
               </div>
            </div>
@@ -286,7 +288,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                  <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-orange-500" />
-                    <span className="font-bold text-gray-800 text-sm">Classes Impactées (Absences Profs)</span>
+                    <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.classesImpactedTitle')}</span>
                  </div>
                  <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md font-bold uppercase border border-orange-100">Top 5</span>
               </div>
@@ -296,7 +298,7 @@ export const AdminDashboard: React.FC = () => {
                        <div key={idx} className="group">
                           <div className="flex justify-between items-end mb-1.5">
                              <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{cl.name}</span>
-                             <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">{cl.count} <span className="text-[10px] opacity-70">séances perdues</span></span>
+                             <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">{cl.count} <span className="text-[10px] opacity-70">{t('admin.dashboard.sessionsLost', { count: cl.count })}</span></span>
                           </div>
                           <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                              <div 
@@ -307,7 +309,7 @@ export const AdminDashboard: React.FC = () => {
                        </div>
                     ))
                  ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">Aucun impact constaté.</div>
+                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">{t('admin.dashboard.noImpact')}</div>
                  )}
               </div>
            </div>
@@ -317,7 +319,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-orange-500" />
-            <span className="font-bold text-gray-800 text-sm">Importer un emploi du temps</span>
+            <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.importTitle')}</span>
           </div>
           <div className="p-5">
             <WeekUploader onUploadComplete={loadDashboardData} />
@@ -327,16 +329,16 @@ export const AdminDashboard: React.FC = () => {
         {/* ── Weeks Table ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2">
-            <span className="font-bold text-gray-800 text-sm">Emplois du temps importés</span>
+            <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.weeksTableTitle')}</span>
             <span className="bg-orange-50 text-orange-600 text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-wider font-bold border border-orange-100">
-              {weeks.length} semaine{weeks.length !== 1 ? 's' : ''}
+              {t('admin.dashboard.weeksCount_other', { count: weeks.length })}
             </span>
           </div>
 
           {/* Mobile cards (< md) */}
           <div className="md:hidden divide-y divide-gray-50">
             {weeks.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">Aucun emploi du temps importé</div>
+              <div className="p-8 text-center text-gray-400 text-sm">{t('admin.dashboard.noWeeks')}</div>
             ) : (
               weeks.map((week) => (
                 <div key={week.id} className="p-4 flex items-center justify-between gap-3 hover:bg-orange-50/30 transition-colors">
@@ -348,7 +350,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="bg-gray-100 text-gray-700 font-bold px-2.5 py-1 rounded-lg text-xs">
-                      {week.schedules?.[0]?.count || 0} séances
+                      {week.schedules?.[0]?.count || 0} {t('admin.dashboard.sessionsSuffix')}
                     </span>
                     <button
                       onClick={() => handleDeleteWeek(week.id)}
@@ -367,10 +369,10 @@ export const AdminDashboard: React.FC = () => {
             <table className="w-full text-left">
               <thead className="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-5 py-3 font-bold">Semaine</th>
-                  <th className="px-5 py-3 font-bold">Date de début</th>
-                  <th className="px-5 py-3 font-bold text-center">Séances</th>
-                  <th className="px-5 py-3 font-bold text-center">Actions</th>
+                  <th className="px-5 py-3 font-bold">{t('admin.dashboard.weekColName')}</th>
+                  <th className="px-5 py-3 font-bold">{t('admin.dashboard.weekColStart')}</th>
+                  <th className="px-5 py-3 font-bold text-center">{t('admin.dashboard.weekColSessions')}</th>
+                  <th className="px-5 py-3 font-bold text-center">{t('admin.dashboard.weekColActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -382,7 +384,7 @@ export const AdminDashboard: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       <span className="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-xs">
-                        {week.schedules?.[0]?.count || 0}
+                        {week.schedules?.[0]?.count || 0} {t('admin.dashboard.sessionsSuffix')}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-center">
@@ -399,7 +401,7 @@ export const AdminDashboard: React.FC = () => {
                 {weeks.length === 0 && (
                   <tr>
                     <td colSpan={4} className="p-10 text-center text-gray-400 text-sm">
-                      Aucun emploi du temps importé
+                      {t('admin.dashboard.noWeeks')}
                     </td>
                   </tr>
                 )}

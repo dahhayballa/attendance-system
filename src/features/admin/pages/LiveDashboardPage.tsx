@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { realtimeService } from '../../../services/supabase/realtime.service';
 import Card from '../../../shared/components/ui/Card';
@@ -7,6 +8,7 @@ import { adminService } from '../../../services/supabase/admin.service';
 import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 
 export const LiveDashboardPage = () => {
+    const { t } = useTranslation();
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, recorded: 0, rate: 0 });
     const [weeks, setWeeks] = useState<any[]>([]);
@@ -106,9 +108,9 @@ export const LiveDashboardPage = () => {
 
                     <div className="relative z-10">
                         <h2 className="text-2xl font-bold flex items-center gap-3 text-gray-900 border-l-4 border-orange-500 pl-3">
-                            <Activity className="text-orange-500 animate-pulse" /> Suivi & Alertes en Direct
+                            <Activity className="text-orange-500 animate-pulse" /> {t('admin.liveDashboard.pageTitle')}
                         </h2>
-                        <p className="text-gray-500 mt-2 font-medium">Surveillance en temps réel des présences et des absences.</p>
+                        <p className="text-gray-500 mt-2 font-medium">{t('admin.liveDashboard.pageSubtitle')}</p>
                     </div>
                 </div>
 
@@ -117,8 +119,8 @@ export const LiveDashboardPage = () => {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex-1 w-full">
                             <div className="flex justify-between text-xs mb-2">
-                                <span className="font-bold text-gray-500 uppercase tracking-wider">Progression des Enregistrements</span>
-                                <span className="font-black text-gray-900">{stats.recorded} / {stats.total} séances</span>
+                                <span className="font-bold text-gray-500 uppercase tracking-wider">{t('admin.liveDashboard.progressLabel')}</span>
+                                <span className="font-black text-gray-900">{t('admin.liveDashboard.progressSessions', { recorded: stats.recorded, total: stats.total })}</span>
                             </div>
                             <div className="h-3 rounded-full bg-gray-100 overflow-hidden border border-gray-50 shadow-inner">
                                 <div
@@ -132,7 +134,7 @@ export const LiveDashboardPage = () => {
 
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0">
                             <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Semaine</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">{t('admin.liveDashboard.weekLabel')}</label>
                                 {/* <select
                                     value={selectedWeek}
                                     onChange={(e) => setSelectedWeek(e.target.value)}
@@ -144,13 +146,13 @@ export const LiveDashboardPage = () => {
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Jour</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">{t('admin.liveDashboard.dayLabel')}</label>
                                 <select
                                     value={selectedDay}
                                     onChange={(e) => setSelectedDay(e.target.value)}
                                     className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 transition-all font-bold text-gray-700 min-w-[140px] cursor-pointer"
                                 >
-                                    <option value="all">Tous les jours</option>
+                                    <option value="all">{t('admin.liveDashboard.allDays')}</option>
                                     {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map(d => (
                                         <option key={d} value={d}>{d}</option>
                                     ))}
@@ -164,24 +166,24 @@ export const LiveDashboardPage = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                         <div className="bg-yellow-50 p-6 rounded-2xl border border-yellow-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
                             <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-2 text-center">
-                                {selectedDay === 'all' ? 'Séances (Semaine)' : `Séances : ${selectedDay}`}
+                                {selectedDay === 'all' ? t('admin.liveDashboard.statSessionsWeek') : `${t('admin.liveDashboard.statSessions')} : ${selectedDay}`}
                             </span>
                             <span className="text-4xl font-black text-gray-900">{stats.total}</span>
                         </div>
                         <div className="bg-green-50 p-6 rounded-2xl border border-green-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
-                            <span className="text-green-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><UserCheck size={16} /> Présents</span>
+                            <span className="text-green-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><UserCheck size={16} /> {t('admin.liveDashboard.statPresent')}</span>
                             <span className="text-4xl font-black text-green-700">{stats.present}</span>
                         </div>
                         <div className="bg-red-50 p-6 rounded-2xl border border-red-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
-                            <span className="text-red-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><XCircle size={16} /> Absents</span>
+                            <span className="text-red-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><XCircle size={16} /> {t('admin.liveDashboard.statAbsent')}</span>
                             <span className="text-4xl font-black text-red-700">{stats.absent}</span>
                         </div>
                         <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
-                            <span className="text-amber-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><AlertTriangle size={16} /> Retard</span>
+                            <span className="text-amber-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><AlertTriangle size={16} /> {t('admin.liveDashboard.statLate')}</span>
                             <span className="text-4xl font-black text-amber-700">{stats.late || 0}</span>
                         </div>
                         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm flex flex-col items-center justify-center transition-transform hover:scale-105">
-                            <span className="text-blue-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><Users size={16} /> Taux</span>
+                            <span className="text-blue-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2"><Users size={16} /> {t('admin.liveDashboard.statRate')}</span>
                             <span className="text-4xl font-black text-blue-700">{stats.rate}%</span>
                         </div>
                     </div>
@@ -189,7 +191,7 @@ export const LiveDashboardPage = () => {
                     <Card className="shadow-sm flex-1 border-gray-100" padding="p-0">
                         <div className="p-5 border-b border-gray-100 bg-red-50/50 font-bold text-red-800 flex items-center gap-2 px-6 text-sm uppercase tracking-wide">
                             <AlertTriangle size={20} className="text-red-500 animate-pulse" />
-                            Alertes : {selectedDay === 'all' ? 'Toute la Semaine' : selectedDay}
+                            {t('admin.liveDashboard.alertsTitle')} : {selectedDay === 'all' ? t('admin.liveDashboard.alertsTitleAll') : selectedDay}
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
@@ -203,7 +205,7 @@ export const LiveDashboardPage = () => {
                                                 {/* <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-100/50">Responsable: {log.assigned_supervisors}</span> */}
                                             </div>
                                             <div className="text-xs text-gray-400 mt-1 italic">
-                                                Signalé par: {log.user_name}
+                                                {t('admin.liveDashboard.reportedBy', { name: log.user_name })}
                                             </div>
                                         </div>
                                         <div className="flex flex-col sm:items-end w-full sm:w-auto">
@@ -212,7 +214,7 @@ export const LiveDashboardPage = () => {
                                                     log.status === 'late' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
                                                         'bg-blue-100 text-blue-700 border border-blue-200'
                                                 }`}>
-                                                {log.status === 'present' ? 'Présent' : log.status === 'absent' ? 'Absent' : log.status === 'late' ? 'Retard' : 'Motif'}
+                                                {log.status === 'present' ? t('admin.liveDashboard.statusPresent') : log.status === 'absent' ? t('admin.liveDashboard.statusAbsent') : log.status === 'late' ? t('admin.liveDashboard.statusLate') : t('admin.liveDashboard.statusExcused')}
                                             </span>
                                             <span className="text-xs font-bold text-gray-400 mt-2 flex items-center gap-1.5">
                                                 <Clock size={12} />
@@ -223,7 +225,7 @@ export const LiveDashboardPage = () => {
                                 ))}
                                 {recentLogs.length === 0 && (
                                     <div className="text-center py-12 text-gray-400 text-sm font-medium">
-                                        Aucun enregistrement récent
+                                        {t('admin.liveDashboard.noRecords')}
                                     </div>
                                 )}
                             </div>

@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { supervisorAssignmentsService, SupervisorAssignment } from '../../../services/supabase/supervisor-assignments.service';
 import Card from '../../../shared/components/ui/Card';
@@ -8,6 +9,7 @@ import { Trash2, Users, Building, BookOpen, UserPlus } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 
 export const SupervisorAssignmentsPage = () => {
+    const { t } = useTranslation();
     const [assignments, setAssignments] = useState<SupervisorAssignment[]>([]);
     const [supervisors, setSupervisors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export const SupervisorAssignmentsPage = () => {
             setAssignments(assignData);
             setSupervisors(supData);
         } catch (err) {
-            toast.error("Échec du chargement des données");
+            toast.error(t('admin.supervisors.loadError'));
         } finally {
             setLoading(false);
         }
@@ -41,8 +43,8 @@ export const SupervisorAssignmentsPage = () => {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!supervisorId) return toast.error("Vous devez sélectionner un superviseur");
-        if (type !== 'all' && !value) return toast.error("Vous devez spécifier la classe ou la matière");
+        if (!supervisorId) return toast.error(t('admin.supervisors.supervisorRequired'));
+        if (type !== 'all' && !value) return toast.error(t('admin.supervisors.valueRequired'));
 
         setIsSubmitting(true);
         try {
@@ -51,7 +53,7 @@ export const SupervisorAssignmentsPage = () => {
                 assignment_type: type,
                 assignment_value: type === 'all' ? null : value
             });
-            toast.success("Affectation créée avec succès");
+            toast.success(t('admin.supervisors.createSuccess'));
 
             // Reset form
             setSupervisorId('');
@@ -61,20 +63,20 @@ export const SupervisorAssignmentsPage = () => {
             // Reload
             loadData();
         } catch (err) {
-            toast.error("Échec de l'affectation (Cette affectation existe peut-être déjà)");
+            toast.error(t('admin.supervisors.createError'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette affectation ?")) return;
+        if (!window.confirm(t('admin.supervisors.deleteConfirm'))) return;
         try {
             await supervisorAssignmentsService.deleteAssignment(id);
-            toast.success("Supprimée avec succès");
+            toast.success(t('admin.supervisors.deleteSuccess'));
             loadData();
         } catch (err) {
-            toast.error("Échec de la suppression");
+            toast.error(t('admin.supervisors.deleteError'));
         }
     };
 
@@ -87,8 +89,8 @@ export const SupervisorAssignmentsPage = () => {
                             <Users size={24} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">Gestion des Superviseurs</h2>
-                            <p className="text-sm font-medium text-gray-500 mt-1">Affectation des classes et matières aux superviseurs</p>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('admin.supervisors.pageTitle')}</h2>
+                            <p className="text-sm font-medium text-gray-500 mt-1">{t('admin.supervisors.pageSubtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -98,19 +100,19 @@ export const SupervisorAssignmentsPage = () => {
                     <Card className="lg:col-span-1 border-t-4 border-orange-500 shadow-sm" padding="p-6">
                         <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
                             <UserPlus size={18} className="text-orange-500" />
-                            Nouvelle Affectation
+                            {t('admin.supervisors.newAssignment')}
                         </h3>
 
                         <form onSubmit={handleCreate} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Superviseur</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('admin.supervisors.supervisorLabel')}</label>
                                 <select
                                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
                                     value={supervisorId}
                                     onChange={(e) => setSupervisorId(e.target.value)}
                                     required
                                 >
-                                    <option value="">-- Sélectionner un Superviseur --</option>
+                                    <option value="">{t('admin.supervisors.selectSupervisor')}</option>
                                     {supervisors.map(s => (
                                         <option key={s.id} value={s.id}>{s.name || s.email}</option>
                                     ))}
@@ -118,29 +120,29 @@ export const SupervisorAssignmentsPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Type d'affectation</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('admin.supervisors.assignmentTypeLabel')}</label>
                                 <select
                                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
                                     value={type}
                                     onChange={(e) => setType(e.target.value as any)}
                                 >
-                                    <option value="all">Toutes les séances de l'école</option>
-                                    <option value="class">Classe spécifique</option>
-                                    <option value="subject">Matière spécifique</option>
+                                    <option value="all">{t('admin.supervisors.typeAll')}</option>
+                                    <option value="class">{t('admin.supervisors.typeClass')}</option>
+                                    <option value="subject">{t('admin.supervisors.typeSubject')}</option>
                                 </select>
                             </div>
 
                             {type !== 'all' && (
                                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                     <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                                        {type === 'class' ? 'Nom de la classe (ex: 1BTSMEC A)' : 'Nom de la matière (ex: Math)'}
+                                        {type === 'class' ? t('admin.supervisors.classPlaceholder') : t('admin.supervisors.subjectPlaceholder')}
                                     </label>
                                     <input
                                         type="text"
                                         className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
                                         value={value}
                                         onChange={(e) => setValue(e.target.value)}
-                                        placeholder="Entrez la valeur..."
+                                        placeholder={t('admin.supervisors.valuePlaceholder')}
                                         required
                                     />
                                 </div>
@@ -152,7 +154,7 @@ export const SupervisorAssignmentsPage = () => {
                                 loading={isSubmitting} 
                                 className="mt-4 bg-orange-600 hover:bg-orange-700 text-white border-transparent"
                             >
-                                Ajouter l'affectation
+                                {t('admin.supervisors.addButton')}
                             </Button>
                         </form>
                     </Card>
@@ -162,7 +164,7 @@ export const SupervisorAssignmentsPage = () => {
                         <div className="p-5 border-b border-gray-100 bg-gray-50/50 font-bold text-gray-800 flex items-center justify-between">
                             <span className="flex items-center gap-2">
                                 <Users size={18} className="text-orange-500" />
-                                Affectations Actuelles
+                                {t('admin.supervisors.currentAssignments')}
                             </span>
                             <span className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
                                 {assignments.length} Total
@@ -172,25 +174,25 @@ export const SupervisorAssignmentsPage = () => {
                         {loading ? (
                             <div className="p-12 text-center flex items-center justify-center flex-col gap-4">
                                 <Loading />
-                                <span className="text-gray-400 font-medium text-sm">Chargement des affectations...</span>
+                                <span className="text-gray-400 font-medium text-sm">{t('admin.supervisors.loadingAssignments')}</span>
                             </div>
                         ) : assignments.length === 0 ? (
                             <div className="p-16 text-center">
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Users size={28} className="text-gray-300" />
                                 </div>
-                                <h3 className="font-bold text-gray-600 mb-1">Aucune affectation trouvée</h3>
-                                <p className="text-gray-400 text-sm">Toutes les séances sont ouvertes à l'ensemble des superviseurs.</p>
+                                <h3 className="font-bold text-gray-600 mb-1">{t('admin.supervisors.noAssignments')}</h3>
+                                <p className="text-gray-400 text-sm">{t('admin.supervisors.noAssignmentsDetail')}</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
                                         <tr>
-                                            <th className="px-6 py-4 font-bold">Superviseur</th>
-                                            <th className="px-6 py-4 font-bold">Type</th>
-                                            <th className="px-6 py-4 font-bold">Valeur</th>
-                                            <th className="px-6 py-4 font-bold text-center">Actions</th>
+                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colSupervisor')}</th>
+                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colType')}</th>
+                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colValue')}</th>
+                                            <th className="px-6 py-4 font-bold text-center">{t('admin.supervisors.colActions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -198,9 +200,9 @@ export const SupervisorAssignmentsPage = () => {
                                             <tr key={a.id} className="hover:bg-orange-50/30 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-gray-900">{a.user?.name || a.user?.email}</td>
                                                 <td className="px-6 py-4">
-                                                    {a.assignment_type === 'all' && <span className="text-purple-700 bg-purple-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm">Toutes</span>}
-                                                    {a.assignment_type === 'class' && <span className="text-blue-700 bg-blue-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><Building size={12} /> Classe</span>}
-                                                    {a.assignment_type === 'subject' && <span className="text-green-700 bg-green-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><BookOpen size={12} /> Matière</span>}
+                                                    {a.assignment_type === 'all' && <span className="text-purple-700 bg-purple-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm">{t('admin.supervisors.typeAll_badge')}</span>}
+                                                    {a.assignment_type === 'class' && <span className="text-blue-700 bg-blue-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><Building size={12} /> {t('admin.supervisors.typeClass_badge')}</span>}
+                                                    {a.assignment_type === 'subject' && <span className="text-green-700 bg-green-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><BookOpen size={12} /> {t('admin.supervisors.typeSubject_badge')}</span>}
                                                 </td>
                                                 <td className="px-6 py-4 font-medium text-gray-600">{a.assignment_value || '—'}</td>
                                                 <td className="px-6 py-4 text-center">

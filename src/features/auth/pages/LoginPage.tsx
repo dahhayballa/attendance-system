@@ -52,16 +52,26 @@ export const LoginPage = () => {
 
             if (!data) return;
 
-            // Check where user came from, or default based on role
+            // Check where user came from and validate it against the user's role
+            const resolvedRole = data?.resolvedUser?.role;
             const from = (location.state as any)?.from?.pathname;
-            if (from) {
-                navigate(from, { replace: true });
-            } else {
-                // ✅ FIX : utilise data.resolvedUser qui contient le rôle de public.users
-                // data?.user est l'objet Auth Supabase (sans 'role') → on lisait toujours undefined
-                const resolvedRole = data?.resolvedUser?.role;
-                navigate(resolvedRole === 'admin' ? '/admin' : '/supervisor', { replace: true });
+
+            let targetPath = resolvedRole === 'admin' ? '/admin' : '/supervisor';
+
+            if (from && from !== '/' && from !== '/login') {
+                const isAdminRoute = from.startsWith('/admin');
+                const isSupervisorRoute = from.startsWith('/supervisor');
+
+                if (resolvedRole === 'admin' && isAdminRoute) {
+                    targetPath = from;
+                } else if ((resolvedRole === 'supervisor' || resolvedRole === 'surveillance') && isSupervisorRoute) {
+                    targetPath = from;
+                } else if (!isAdminRoute && !isSupervisorRoute) {
+                    targetPath = from; // Standard cross-role routes
+                }
             }
+
+            navigate(targetPath, { replace: true });
 
         } catch (err: any) {
             setAuthError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');

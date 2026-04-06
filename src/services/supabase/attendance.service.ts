@@ -83,7 +83,7 @@ export const getAttendanceLogs = async (filters: LogsFilters = {}): Promise<Atte
         teacher_name: log.schedule?.teacher,
         class_name: log.schedule?.class,
         subject: log.schedule?.subject,
-        user_name: log.user ? (log.user.name || log.user.email?.split('@')[0] || 'Inconnu') : 'Système Automatique 🤖',
+        user_name: log.user ? (log.user.name || log.user.email?.split('@')[0] || 'Inconnu') : 'Système Automatique ',
     }));
 };
 

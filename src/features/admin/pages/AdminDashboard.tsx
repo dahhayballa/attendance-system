@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { WeekUploader } from '../components/WeekUploader';
 import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
-import {  Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import {  Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
 import { Layout } from '../../../shared/components/layout/Layout';
 
 export const AdminDashboard: React.FC = () => {
@@ -10,14 +10,14 @@ export const AdminDashboard: React.FC = () => {
   const [weeks, setWeeks] = useState<any[]>([]);
   const [,setRecentLogs] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<{ topTeachers: any[], topClasses: any[] }>({ topTeachers: [], topClasses: [] });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   
   // Nouveaux états pour le filtrage
   const [selectedWeek] = useState<string>('all');
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
-  const [selectedClass, setSelectedClass] = useState<string>('all');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [filterOptions, setFilterOptions] = useState<{ teachers: {label: string, value: string}[]; classes: string[]; subjects: {label: string, value: string}[] }>({ teachers: [], classes: [], subjects: [] });
+  const [selectedTeacher] = useState<string>('all');
+  const [selectedClass] = useState<string>('all');
+  const [selectedSubject] = useState<string>('all');
+  const [, setFilterOptions] = useState<{ teachers: {label: string, value: string}[]; classes: string[]; subjects: {label: string, value: string}[] }>({ teachers: [], classes: [], subjects: [] });
   
   const { toast } = useToast();
 
@@ -141,7 +141,7 @@ export const AdminDashboard: React.FC = () => {
               {weeks.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select> */}
 
-            <select
+            {/* <select
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
               className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
@@ -175,7 +175,7 @@ export const AdminDashboard: React.FC = () => {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               Actualiser
-            </button>
+            </button> */}
           </div>
         </div>
 

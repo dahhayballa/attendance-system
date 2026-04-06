@@ -14,6 +14,40 @@ interface CurrentSessionState {
     error: string | null;
 }
 
+const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
+
+const getSchoolDayName = (): string => {
+    const enDay = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        timeZone: SCHOOL_TIMEZONE,
+    }).format(new Date());
+
+    const map: Record<string, string> = {
+        Sunday: 'Dimanche',
+        Monday: 'Lundi',
+        Tuesday: 'Mardi',
+        Wednesday: 'Mercredi',
+        Thursday: 'Jeudi',
+        Friday: 'Vendredi',
+        Saturday: 'Samedi',
+    };
+
+    return map[enDay] || 'Lundi';
+};
+
+const getSchoolCurrentMinutes = (): number => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: SCHOOL_TIMEZONE,
+    }).formatToParts(new Date());
+
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+    return hour * 60 + minute;
+};
+
 const normalizeText = (value?: string | null): string =>
     (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -69,19 +103,13 @@ export const useCurrentSession = () => {
     });
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const getTodayName = (): string => {
-        const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-        return days[new Date().getDay()];
-    };
-
     const timeToMinutes = (time: string): number => {
         const parts = time.split(':');
         return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     };
 
     const processSchedules = useCallback((schedules: Schedule[]) => {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = getSchoolCurrentMinutes();
 
         const current = schedules.filter(s => {
             const start = timeToMinutes(s.time_start);
@@ -120,7 +148,7 @@ export const useCurrentSession = () => {
 
     const fetchSchedules = useCallback(async () => {
         try {
-            const todayName = getTodayName();
+            const todayName = getSchoolDayName();
             const todayNormalized = normalizeDay(todayName);
 
             let query = supabase

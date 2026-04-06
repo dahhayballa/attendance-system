@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useRole } from '../../features/auth/hooks/useRole';
+import { useActiveWeek } from './useActiveWeek';
 
 export interface StatsKPI {
     totalSessions: number;
@@ -80,6 +81,7 @@ const INITIAL_RATES: StatsRates = { presenceRate: 0, lateRate: 0, absenceRate: 0
 export const useStatistics = () => {
     const { user } = useAuth();
     const { isAdmin, isSupervisor, isSurveillance } = useRole();
+    const { activeWeek } = useActiveWeek();
     
     const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
     const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -134,9 +136,9 @@ export const useStatistics = () => {
         try {
             setState(prev => ({ ...prev, loading: true, error: null }));
 
-            // 1. Get Supervisor scope if applicable
+            // 1. Get Supervisor/Surveillance scope if applicable
             let scope: { type: 'class' | 'subject' | 'all' | 'mixed', values: string[] } | null = null;
-            if (isSupervisor) {
+            if (isSupervisor || isSurveillance) {
                 const { data: assignments } = await supabase
                     .from('supervisor_assignments')
                     .select('*')
@@ -161,16 +163,28 @@ export const useStatistics = () => {
                 endDate = new Date(startDate);
                 endDate.setDate(endDate.getDate() + 1);
                 daysToProcess = 1;
+            } else if (timeframe === 'week') {
+                // Current calendar week (Monday -> next Monday), not sliding 7 days.
+                const now = new Date();
+                const mondayOffset = (now.getDay() + 6) % 7; // Monday=0, Sunday=6
+                startDate = new Date(now);
+                startDate.setDate(now.getDate() - mondayOffset);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 7);
+                daysToProcess = 7;
             } else {
-                daysToProcess = timeframe === 'week' ? 7 : 30;
-                startDate.setDate(startDate.getDate() - daysToProcess);
-                // Default endDate is now
+                // Current month range.
+                const now = new Date();
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+                daysToProcess = Math.max(28, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
             }
             
             let logsQuery = supabase.from('attendance_logs').select(`
                 id, status, recorded_at, points, late_minutes,
                 schedules (
-                    id, teacher_name, class_name, subject, teacher, class
+                    id, week_id, pointer, teacher_name, class_name, subject, teacher, class
                 )
             `).gte('recorded_at', startDate.toISOString())
               .lt('recorded_at', endDate.toISOString());
@@ -193,19 +207,33 @@ export const useStatistics = () => {
             // 4. Process Data
             const baseLogs = logsData || [];
             
-            // Extract options for filters (from all logs in timeframe, scoped by supervisor if applicable)
+            // Extract options for filters (from all logs in timeframe, scoped by role if applicable)
             let scopeFiltered = baseLogs.map(log => ({
                 ...log,
                 schedules: Array.isArray(log.schedules) ? log.schedules[0] : log.schedules
             }));
 
-            if (isSupervisor && scope) {
+            if (activeWeek?.id) {
+                scopeFiltered = scopeFiltered.filter(log => {
+                    const sched = log.schedules as any;
+                    return sched?.week_id === activeWeek.id;
+                });
+            }
+
+            if ((isSupervisor || isSurveillance) && scope) {
                 scopeFiltered = scopeFiltered.filter(log => {
                     const sched = log.schedules as any;
                     if (!sched) return false;
                     const cName = sched.class_name || sched.class;
                     const sName = sched.subject;
                     return scope!.values.includes(cName) || scope!.values.includes(sName);
+                });
+            } else if ((isSupervisor || isSurveillance) && user?.name) {
+                // Fallback for users without explicit assignments: scope by pointer name.
+                const userName = user.name.trim().toLowerCase();
+                scopeFiltered = scopeFiltered.filter(log => {
+                    const sched = log.schedules as any;
+                    return (sched?.pointer || '').toString().trim().toLowerCase() === userName;
                 });
             }
 
@@ -323,7 +351,7 @@ export const useStatistics = () => {
             console.error('[useStatistics] Error:', err);
             setState(prev => ({ ...prev, loading: false, error: err.message || 'Error loading statistics' }));
         }
-    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, customDate, filters]);
+    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, customDate, filters, activeWeek?.id]);
 
     useEffect(() => {
         fetchStatistics();

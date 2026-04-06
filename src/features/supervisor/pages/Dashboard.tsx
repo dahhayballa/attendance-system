@@ -11,8 +11,8 @@ import {
     ChevronRight, BookOpen, MapPin
 } from 'lucide-react';
 
-const FR_DAYS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 const fmt = (t: string) => t?.slice(0, 5) ?? '';
+const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
 const normalizeText = (value?: string | null): string =>
     (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 const normalizeDay = (value: string): string => {
@@ -50,6 +50,33 @@ const normalizeDay = (value: string): string => {
     };
     return map[v] ?? v;
 };
+const getSchoolDayName = (): string => {
+    const enDay = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        timeZone: SCHOOL_TIMEZONE,
+    }).format(new Date());
+    const map: Record<string, string> = {
+        Sunday: 'Dimanche',
+        Monday: 'Lundi',
+        Tuesday: 'Mardi',
+        Wednesday: 'Mercredi',
+        Thursday: 'Jeudi',
+        Friday: 'Vendredi',
+        Saturday: 'Samedi',
+    };
+    return map[enDay] || 'Lundi';
+};
+const getSchoolCurrentMinutes = (): number => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: SCHOOL_TIMEZONE,
+    }).formatToParts(new Date());
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+    return hour * 60 + minute;
+};
 
 function getLocalizedDate(lang: string) {
     const locale = lang === 'ar' ? 'ar-EG' : 'fr-FR';
@@ -85,9 +112,9 @@ const Dashboard = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const today  = FR_DAYS[new Date().getDay()];
+            const today  = getSchoolDayName();
             const todayNormalized = normalizeDay(today);
-            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const nowMin = getSchoolCurrentMinutes();
 
             let query = supabase
                 .from('schedules').select('*')

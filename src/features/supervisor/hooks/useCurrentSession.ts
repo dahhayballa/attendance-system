@@ -102,6 +102,7 @@ export const useCurrentSession = () => {
         error: null,
     });
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const lastNonEmptyRowsRef = useRef<Schedule[]>([]);
 
     const timeToMinutes = (time: string): number => {
         const parts = time.split(':');
@@ -146,6 +147,11 @@ export const useCurrentSession = () => {
         }));
     }, []);
 
+    const keepOnlyRelevantRows = useCallback((rows: Schedule[]) => {
+        const now = getSchoolCurrentMinutes();
+        return rows.filter(s => timeToMinutes(s.time_end) >= now - 5);
+    }, []);
+
     const fetchSchedules = useCallback(async () => {
         try {
             const todayName = getSchoolDayName();
@@ -176,7 +182,18 @@ export const useCurrentSession = () => {
                 }
             }
 
-            processSchedules(scopedRows);
+            let rowsToProcess = scopedRows;
+            if (rowsToProcess.length > 0) {
+                lastNonEmptyRowsRef.current = rowsToProcess;
+            } else if (lastNonEmptyRowsRef.current.length > 0) {
+                // Temporary fallback to avoid UI drops on transient empty fetches.
+                const fallbackRows = keepOnlyRelevantRows(lastNonEmptyRowsRef.current);
+                if (fallbackRows.length > 0) {
+                    rowsToProcess = fallbackRows;
+                }
+            }
+
+            processSchedules(rowsToProcess);
         } catch (err: any) {
             console.error('[useCurrentSession] Erreur:', err);
             setState(prev => ({ ...prev, loading: false, error: 'Erreur de chargement' }));

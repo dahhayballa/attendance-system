@@ -13,7 +13,7 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   // Nouveaux états pour le filtrage
-  const [selectedWeek, setSelectedWeek] = useState<string>('all');
+  const [selectedWeek] = useState<string>('all');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');

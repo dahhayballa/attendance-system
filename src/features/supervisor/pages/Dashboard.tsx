@@ -13,6 +13,43 @@ import {
 
 const FR_DAYS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 const fmt = (t: string) => t?.slice(0, 5) ?? '';
+const normalizeText = (value?: string | null): string =>
+    (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+const normalizeDay = (value: string): string => {
+    const v = (value || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    const map: Record<string, string> = {
+        dimanche: 'dimanche',
+        sunday: 'dimanche',
+        'الاحد': 'dimanche',
+        'الأحد': 'dimanche',
+        lundi: 'lundi',
+        monday: 'lundi',
+        'الاثنين': 'lundi',
+        'الإثنين': 'lundi',
+        mardi: 'mardi',
+        tuesday: 'mardi',
+        'الثلاثاء': 'mardi',
+        mercredi: 'mercredi',
+        wednesday: 'mercredi',
+        'الاربعاء': 'mercredi',
+        'الأربعاء': 'mercredi',
+        jeudi: 'jeudi',
+        thursday: 'jeudi',
+        'الخميس': 'jeudi',
+        vendredi: 'vendredi',
+        friday: 'vendredi',
+        'الجمعة': 'vendredi',
+        samedi: 'samedi',
+        saturday: 'samedi',
+        'السبت': 'samedi',
+    };
+    return map[v] ?? v;
+};
 
 function getLocalizedDate(lang: string) {
     const locale = lang === 'ar' ? 'ar-EG' : 'fr-FR';
@@ -49,17 +86,22 @@ const Dashboard = () => {
         setLoading(true);
         try {
             const today  = FR_DAYS[new Date().getDay()];
+            const todayNormalized = normalizeDay(today);
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
             let query = supabase
                 .from('schedules').select('*')
-                .eq('day', today);
+                .order('time_start', { ascending: true });
 
-            if (user.role === 'supervisor' && user.name) {
-                query = query.eq('pointer', user.name);
+            const { data: schedsRaw } = await query;
+            let scheds = (schedsRaw || []).filter((s: any) => normalizeDay(s.day) === todayNormalized);
+
+            if ((user.role === 'supervisor' || user.role === 'surveillance') && user.name) {
+                const byPointer = scheds.filter((s: any) => normalizeText(s.pointer) === normalizeText(user.name));
+                if (byPointer.length > 0) {
+                    scheds = byPointer;
+                }
             }
-
-            const { data: scheds } = await query;
 
             if (scheds && scheds.length > 0) {
                 const total = scheds.length;
@@ -186,7 +228,7 @@ const Dashboard = () => {
                             <div className="w-1.5 h-6 rounded-full bg-orange-500" />
                             <h2 className="text-lg font-bold text-gray-900">{t('supervisor.dashboard.currentSessionTitle2')}</h2>
                         </div>
-                        <button onClick={() => navigate('/supervisor/attendance')}
+                        <button onClick={() => navigate('/supervisor/now')}
                             className={`flex items-center gap-1 text-xs font-bold transition-colors hover:text-orange-600 text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg ${isRtl ? 'flex-row-reverse' : ''}`}>
                             <span>{t('supervisor.dashboard.seeAll')}</span>
                             <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />

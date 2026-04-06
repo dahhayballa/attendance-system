@@ -17,6 +17,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const SUPERVISOR_NAV = [
         { section: t('common.navNavigation'), items: [
             { id: 'home',       label: t('supervisor.sidebar.home'),         icon: Home,          path: '/supervisor'                   },
+            { id: 'now',        label: t('supervisor.sidebar.now'),          icon: Activity,      path: '/supervisor/now'               },
             { id: 'history',    label: t('supervisor.sidebar.history'), icon: History,      path: '/supervisor/history'           },
         ]},
         { section: t('common.navAnalysis'), items: [

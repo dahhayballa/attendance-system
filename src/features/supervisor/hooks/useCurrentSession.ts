@@ -14,6 +14,47 @@ interface CurrentSessionState {
     error: string | null;
 }
 
+const normalizeText = (value?: string | null): string =>
+    (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+
+const normalizeDay = (value: string): string => {
+    const v = (value || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const map: Record<string, string> = {
+        dimanche: 'dimanche',
+        sunday: 'dimanche',
+        'الاحد': 'dimanche',
+        'الأحد': 'dimanche',
+        lundi: 'lundi',
+        monday: 'lundi',
+        'الاثنين': 'lundi',
+        'الإثنين': 'lundi',
+        mardi: 'mardi',
+        tuesday: 'mardi',
+        'الثلاثاء': 'mardi',
+        mercredi: 'mercredi',
+        wednesday: 'mercredi',
+        'الاربعاء': 'mercredi',
+        'الأربعاء': 'mercredi',
+        jeudi: 'jeudi',
+        thursday: 'jeudi',
+        'الخميس': 'jeudi',
+        vendredi: 'vendredi',
+        friday: 'vendredi',
+        'الجمعة': 'vendredi',
+        samedi: 'samedi',
+        saturday: 'samedi',
+        'السبت': 'samedi',
+    };
+
+    return map[v] ?? v;
+};
+
 export const useCurrentSession = () => {
     const { user } = useAuth();
     const { activeWeek } = useActiveWeek();
@@ -80,24 +121,34 @@ export const useCurrentSession = () => {
     const fetchSchedules = useCallback(async () => {
         try {
             const todayName = getTodayName();
+            const todayNormalized = normalizeDay(todayName);
 
             let query = supabase
                 .from('schedules')
                 .select('*')
-                .eq('day', todayName)
                 .order('time_start', { ascending: true });
 
             if (activeWeek?.id) {
                 query = query.eq('week_id', activeWeek.id);
             }
 
-            if (user?.role === 'supervisor' && user?.name) {
-                query = query.eq('pointer', user.name);
-            }
-
             const { data, error } = await query;
             if (error) throw error;
-            processSchedules(data as Schedule[]);
+            const allRows = (data as Schedule[]) || [];
+
+            const todayRows = allRows.filter(s => normalizeDay(s.day) === todayNormalized);
+
+            // Apply pointer filtering when possible, but never hide all sessions because of minor name mismatches.
+            let scopedRows = todayRows;
+            if ((user?.role === 'supervisor' || user?.role === 'surveillance') && user?.name) {
+                const userName = normalizeText(user.name);
+                const byPointer = todayRows.filter(s => normalizeText((s as any).pointer) === userName);
+                if (byPointer.length > 0) {
+                    scopedRows = byPointer;
+                }
+            }
+
+            processSchedules(scopedRows);
         } catch (err: any) {
             console.error('[useCurrentSession] Erreur:', err);
             setState(prev => ({ ...prev, loading: false, error: 'Erreur de chargement' }));

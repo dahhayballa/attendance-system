@@ -4,7 +4,7 @@ import { useCurrentSession } from '../hooks/useCurrentSession';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { recordAttendance } from '../services/attendanceService';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search, Pencil } from 'lucide-react';
+import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search } from 'lucide-react';
 import { Modal } from '../../../shared/components/ui/Modal';
 
 interface CurrentSessionCardProps {
@@ -152,10 +152,6 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     const startMins = sh * 60 + sm;
                                     const graceLimit = (sh === 8 && sm === 0) ? 40 : 20;
                                     const isLate = currentMins > startMins + graceLimit;
-                                    const isRecorded = session.status && session.status !== 'pending';
-                                    const diffMs = isRecorded && session.recorded_at ? (currentTime.getTime() - new Date(session.recorded_at).getTime()) : 999999;
-                                    const canEdit = isRecorded && diffMs <= 5 * 60 * 1000;
-                                    
                                     const statusToSend = isLate ? 'late' : 'present';
                                     const Label = isLate ? t('supervisor.currentSessionCard.late') : t('supervisor.currentSessionCard.present');
                                     const Icon = isLate ? AlertTriangle : CheckCircle;
@@ -163,8 +159,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                         ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200' 
                                         : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200';
                                     
-                                    const isEditable = isRecorded && canEdit;
-                                    const isDisabled = (recording === session.id) || (isRecorded && !isEditable);
+                                    const isDisabled = recording === session.id;
                                     const buttonBaseClass = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm active:scale-95";
 
                                     return (
@@ -181,11 +176,11 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                                 }
                                             }}
                                             disabled={isDisabled}
-                                            className={`${buttonBaseClass} ${isDisabled && isRecorded ? 'opacity-50 cursor-not-allowed grayscale' : 'active:scale-95'} ${isEditable ? 'bg-blue-50 text-blue-600 border-blue-200' : colorClass}`}
-                                            title={isRecorded && !isEditable ? t('supervisor.currentSessionCard.alreadyRecorded') : (isLate ? t('supervisor.currentSessionCard.markLate') : t('supervisor.currentSessionCard.markPresent'))}
+                                            className={`${buttonBaseClass} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'} ${colorClass}`}
+                                            title={isLate ? t('supervisor.currentSessionCard.markLate') : t('supervisor.currentSessionCard.markPresent')}
                                         >
-                                            {isEditable ? <Pencil size={14} /> : <Icon size={16} className={!isRecorded ? 'animate-pulse' : ''} />}
-                                            <span>{isEditable ? t('common.edit', { defaultValue: 'تعديل' }) : Label}</span>
+                                            <Icon size={16} className="animate-pulse" />
+                                            <span>{Label}</span>
                                         </button>
                                     );
                                 })()}

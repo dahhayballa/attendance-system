@@ -1,14 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../services/supabase/client';
 import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import SupervisorLayout from '../components/SupervisorLayout';
 import {
-    CheckCircle, XCircle, Clock, AlertTriangle,
-    ChevronRight
-} from 'lucide-react';
+    CheckCircle, XCircle, Clock, AlertTriangle} from 'lucide-react';
 
 const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
 const normalizeText = (value?: string | null): string =>
@@ -74,7 +71,6 @@ function getLocalizedDate(lang: string) {
 const Dashboard = () => {
     const { t, i18n } = useTranslation();
     const { user } = useAuth();
-    const navigate = useNavigate();
     const { activeWeek } = useActiveWeek();
     const [stats, setStats]             = useState({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
     const [loading, setLoading]         = useState(true);

@@ -5,13 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../services/supabase/client';
 import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import SupervisorLayout from '../components/SupervisorLayout';
-import CurrentSessionCard from '../components/CurrentSessionCard';
 import {
     CheckCircle, XCircle, Clock, AlertTriangle,
-    ChevronRight, BookOpen, MapPin
+    ChevronRight
 } from 'lucide-react';
 
-const fmt = (t: string) => t?.slice(0, 5) ?? '';
 const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
 const normalizeText = (value?: string | null): string =>
     (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
@@ -66,18 +64,6 @@ const getSchoolDayName = (): string => {
     };
     return map[enDay] || 'Lundi';
 };
-const getSchoolCurrentMinutes = (): number => {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: SCHOOL_TIMEZONE,
-    }).formatToParts(new Date());
-    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
-    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
-    return hour * 60 + minute;
-};
-
 function getLocalizedDate(lang: string) {
     const locale = lang === 'ar' ? 'ar-EG' : 'fr-FR';
     return new Date().toLocaleDateString(locale, {
@@ -91,7 +77,6 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { activeWeek } = useActiveWeek();
     const [stats, setStats]             = useState({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
-    const [nextSession, setNextSession] = useState<any>(null);
     const [loading, setLoading]         = useState(true);
     const [time, setTime]               = useState(new Date());
 
@@ -114,7 +99,6 @@ const Dashboard = () => {
         try {
             const today  = getSchoolDayName();
             const todayNormalized = normalizeDay(today);
-            const nowMin = getSchoolCurrentMinutes();
 
             let query = supabase
                 .from('schedules').select('*')
@@ -154,17 +138,8 @@ const Dashboard = () => {
                 const late = Array.from(uniqueLogs.values()).filter(s => s === 'late').length;
 
                 setStats({ total, present, absent, late, pending: total - present - absent - late });
-
-                const upcoming = scheds
-                    .filter(s => {
-                        const [h, m] = (s.time_start ?? '00:00').split(':').map(Number);
-                        return h * 60 + m > nowMin;
-                    })
-                    .sort((a: any, b: any) => a.time_start.localeCompare(b.time_start));
-                setNextSession(upcoming[0] ?? null);
             } else {
                 setStats({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
-                setNextSession(null);
             }
         } finally { setLoading(false); }
     }, [user?.name, activeWeek?.id]);
@@ -248,55 +223,14 @@ const Dashboard = () => {
                     ))}
                 </div>
 
-                {/* ══ CURRENT SESSION ══ */}
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-6 rounded-full bg-orange-500" />
-                            <h2 className="text-lg font-bold text-gray-900">{t('supervisor.dashboard.currentSessionTitle2')}</h2>
-                        </div>
-                        <button onClick={() => navigate('/supervisor/now')}
-                            className={`flex items-center gap-1 text-xs font-bold transition-colors hover:text-orange-600 text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg ${isRtl ? 'flex-row-reverse' : ''}`}>
-                            <span>{t('supervisor.dashboard.seeAll')}</span>
-                            <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
-                        </button>
-                    </div>
-                    <CurrentSessionCard onAttendanceRecorded={fetchData} />
-                </div>
-
-                {/* ══ NEXT SESSION ══ */}
-                {nextSession && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-1.5 h-6 rounded-full bg-blue-500" />
-                            <h2 className="text-lg font-bold text-gray-900">{t('supervisor.dashboard.nextSessionTitle2')}</h2>
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-900 text-base">{nextSession.teacher}</p>
-                                    <p className="text-sm font-medium text-gray-500 mt-1 truncate">{nextSession.subject}</p>
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-50 text-gray-600 px-2.5 py-1.5 rounded-lg border border-gray-100">
-                                            <BookOpen size={13} /> {nextSession.class}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-50 text-gray-600 px-2.5 py-1.5 rounded-lg border border-gray-100">
-                                            <MapPin size={13} /> {nextSession.room}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex-shrink-0">
-                                    <div className="rounded-xl px-4 py-3 text-center bg-orange-50 border border-orange-100 shadow-sm">
-                                        <p className="text-xl font-black font-mono text-orange-600" dir="ltr">
-                                            {fmt(nextSession.time_start)}
-                                        </p>
-                                        <p className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest mt-1">{t('supervisor.dashboard.startsAt')}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* <div className="flex justify-center pt-4">
+                    <button onClick={() => navigate('/supervisor/now')}
+                        className={`flex items-center gap-2 font-bold text-white bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-xl transition-colors shadow-sm ${isRtl ? 'flex-row-reverse' : ''}`}
+                    >
+                        <span>Gérer les présences en cours</span>
+                        <ChevronRight size={18} className={isRtl ? 'rotate-180' : ''} />
+                    </button>
+                </div> */}
 
             </div>
         </SupervisorLayout>

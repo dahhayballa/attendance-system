@@ -147,7 +147,9 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                             </div>
                             <div className="flex gap-1.5 flex-shrink-0 relative z-10" onClick={e => e.stopPropagation()}>
                                 {(() => {
-                                    const isRecorded = session.status && session.status !== 'pending';
+                                    // Auto-absent (recorded_by is null) should be treated as pending
+                                    const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
+                                    const isRecorded = session.status && session.status !== 'pending' && !isAutoAbsent;
                                     let timeSinceRecord = Infinity;
                                     if (isRecorded && session.recorded_at) {
                                         timeSinceRecord = (currentTime.getTime() - new Date(session.recorded_at).getTime()) / 60000;
@@ -165,7 +167,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                         return (
                                             <span className={`px-3 py-1.5 rounded-lg border font-semibold text-sm shadow-sm flex items-center gap-1.5 ${isPresent ? 'bg-green-50 text-green-600 border-green-200' : isLateRec ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
                                                 {isPresent ? <CheckCircle size={16} /> : isLateRec ? <AlertTriangle size={16} /> : <AlertOctagon size={16} />}
-                                                {isPresent ? t('supervisor.currentSessionCard.present') : isLateRec ? t('supervisor.currentSessionCard.late') : t('supervisor.currentSessionCard.absent')}
+                                                {isPresent ? t('supervisor.currentSessionCard.present', 'Présent') : isLateRec ? t('supervisor.currentSessionCard.late', 'En retard') : t('supervisor.currentSessionCard.absent', 'Absent')}
                                             </span>
                                         );
                                     }
@@ -176,7 +178,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     }
 
                                     const isLateDefault = currentMins > startMins + graceLimit;
-                                    const Label = isRecorded ? t('supervisor.currentSessionCard.edit', 'Modifier') : (isLateDefault ? t('supervisor.currentSessionCard.late') : t('supervisor.currentSessionCard.present'));
+                                    const Label = isRecorded ? t('supervisor.currentSessionCard.edit', 'Modifier') : (isLateDefault ? t('supervisor.currentSessionCard.late', 'En retard') : t('supervisor.currentSessionCard.present', 'Présent'));
                                     const Icon = isRecorded ? RefreshCw : (isLateDefault ? AlertTriangle : CheckCircle);
                                     const colorClass = isRecorded
                                         ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200'

@@ -178,12 +178,12 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     }
 
                                     const isLateDefault = currentMins > startMins + graceLimit;
-                                    const Label = isRecorded ? t('supervisor.currentSessionCard.edit', 'Modifier') : (isLateDefault ? t('supervisor.currentSessionCard.late', 'En retard') : t('supervisor.currentSessionCard.present', 'Présent'));
-                                    const Icon = isRecorded ? RefreshCw : (isLateDefault ? AlertTriangle : CheckCircle);
+                                    const Label = isRecorded ? t('supervisor.currentSessionCard.edit', 'Modifier') : (isLateDefault ? t('supervisor.currentSessionCard.pending', 'En attente') : t('supervisor.currentSessionCard.present', 'Présent'));
+                                    const Icon = isRecorded ? RefreshCw : (isLateDefault ? Clock : CheckCircle);
                                     const colorClass = isRecorded
                                         ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200'
                                         : (isLateDefault 
-                                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200' 
+                                            ? 'bg-orange-50 text-orange-500 hover:bg-orange-100 border-orange-200' 
                                             : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200');
                                     
                                     const isDisabled = recording === session.id;
@@ -240,20 +240,30 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     icon: <CheckCircle size={16} />,
                                     label: t('supervisor.currentSessionCard.statusLabel'),
                                     value: (() => {
-                                        const isRec = infoSession.status && infoSession.status !== 'pending';
+                                        const isAutoAbsent = infoSession.status === 'absent' && !infoSession.recorded_by;
+                                        const isRec = infoSession.status && infoSession.status !== 'pending' && !isAutoAbsent;
+                                        
                                         if (isRec) {
-                                            const timeStr = infoSession.recorded_at ? new Date(infoSession.recorded_at).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                                            const formatOpts: Intl.DateTimeFormatOptions = { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit',
+                                                numberingSystem: 'latn' 
+                                            };
+                                            const timeStr = infoSession.recorded_at 
+                                                ? new Date(infoSession.recorded_at).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', formatOpts) 
+                                                : new Date().toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', formatOpts);
+                                                
                                             if (infoSession.status === 'present') return <span dir="ltr">{t('supervisor.currentSessionCard.presentAt')} {timeStr}</span>;
-                                            if (infoSession.status === 'late') return <span dir="ltr">{t('supervisor.currentSessionCard.lateAt')} {timeStr} )</span>;
+                                            if (infoSession.status === 'late') return <span dir="ltr">{t('supervisor.currentSessionCard.lateAt')} {timeStr}</span>;
                                             if (infoSession.status === 'absent') return t('supervisor.currentSessionCard.absentRecorded');
                                             return `${t('supervisor.currentSessionCard.statusLabel')} : ${infoSession.status}`;
                                         }
                                         const cm = currentTime.getHours() * 60 + currentTime.getMinutes();
                                         const [h, m] = (infoSession.time_start || '00:00').split(':').map(Number);
                                         const isL = cm > (h * 60 + m) + 20;
-                                        return isL ? t('supervisor.currentSessionCard.willBeLate') : t('supervisor.currentSessionCard.willBePresent');
+                                        return isL ? t('supervisor.currentSessionCard.pending', 'En attente') : t('supervisor.currentSessionCard.willBePresent', 'Sera présent');
                                     })(),
-                                    color: (infoSession.status && infoSession.status !== 'pending') ? 'text-blue-600' : 'text-gray-500'
+                                    color: (infoSession.status && infoSession.status !== 'pending' && (!infoSession.status || infoSession.recorded_by)) ? 'text-blue-600' : 'text-gray-500'
                                 },
                             ].map(({ icon, label, value, bold, color }, i) => (
                                 <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-white transition-colors">

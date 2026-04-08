@@ -146,71 +146,117 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                 <p className="text-xs text-gray-500 font-medium truncate mt-0.5">{session.subject} — <span className="text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{session.class}</span></p>
                             </div>
                             <div className="flex gap-1.5 flex-shrink-0 relative z-10" onClick={e => e.stopPropagation()}>
-                                {(() => {
-                                    // Auto-absent (recorded_by is null) should be treated as pending
-                                    const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
-                                    const isRecorded = session.status && session.status !== 'pending' && !isAutoAbsent;
-                                    let timeSinceRecord = Infinity;
-                                    if (isRecorded && session.recorded_at) {
-                                        timeSinceRecord = (currentTime.getTime() - new Date(session.recorded_at).getTime()) / 60000;
-                                    }
-                                    
-                                    const canEdit = !isRecorded || timeSinceRecord <= 5;
-                                    const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
-                                    const [sh, sm] = (session.time_start || '00:00').split(':').map(Number);
-                                    const startMins = sh * 60 + sm;
-                                    const graceLimit = (sh === 8 && sm === 0) ? 40 : 20;
+{(() => {
+    const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
+    const isRecordedByHuman = 
+        !!session.status && 
+        session.status !== 'pending' && 
+        !isAutoAbsent;
 
-                                    if (!canEdit) {
-                                        const isPresent = session.status === 'present';
-                                        const isLateRec = session.status === 'late';
-                                        return (
-                                            <span className={`px-3 py-1.5 rounded-lg border font-semibold text-sm shadow-sm flex items-center gap-1.5 ${isPresent ? 'bg-green-50 text-green-600 border-green-200' : isLateRec ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
-                                                {isPresent ? <CheckCircle size={16} /> : isLateRec ? <AlertTriangle size={16} /> : <AlertOctagon size={16} />}
-                                                {isPresent ? t('supervisor.currentSessionCard.present', 'Présent') : isLateRec ? t('supervisor.currentSessionCard.late', 'En retard') : t('supervisor.currentSessionCard.absent', 'Absent')}
-                                            </span>
-                                        );
-                                    }
+    // ── Heure locale école (Nouakchott) ──
+    const nowLocal = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit', minute: '2-digit', hour12: false,
+        timeZone: 'Africa/Nouakchott',
+    }).format(currentTime);
+    const [nowH, nowM] = nowLocal.split(':').map(Number);
+    const currentMins = nowH * 60 + nowM;
 
-                                    let statusToSend: 'late' | 'present' = currentMins > startMins + graceLimit ? 'late' : 'present';
-                                    if (isRecorded) {
-                                        statusToSend = session.status === 'present' ? 'late' : 'present';
-                                    }
+    const [sh, sm] = (session.time_start || '00:00').split(':').map(Number);
+    const [] = (session.time_end   || '00:00').split(':').map(Number);
+    const startMins = sh * 60 + sm;
 
-                                    const isLateDefault = currentMins > startMins + graceLimit;
-                                    const Label = isRecorded ? t('supervisor.currentSessionCard.edit', 'Modifier') : (isLateDefault ? t('supervisor.currentSessionCard.pending', 'En attente') : t('supervisor.currentSessionCard.present', 'Présent'));
-                                    const Icon = isRecorded ? RefreshCw : (isLateDefault ? Clock : CheckCircle);
-                                    const colorClass = isRecorded
-                                        ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200'
-                                        : (isLateDefault 
-                                            ? 'bg-orange-50 text-orange-500 hover:bg-orange-100 border-orange-200' 
-                                            : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200');
-                                    
-                                    const isDisabled = recording === session.id;
-                                    const buttonBaseClass = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm active:scale-95";
+    // 20 min après le début = seuil retard
+    const lateThreshold = startMins + 20;
+    const isAfterLateThreshold = currentMins >= lateThreshold;
 
-                                    return (
-                                        <button 
-                                            onClick={() => {
-                                                if (statusToSend === 'late') {
-                                                    const cm = currentTime.getHours() * 60 + currentTime.getMinutes();
-                                                    const [shVal, smVal] = (session.time_start || '00:00').split(':').map(Number);
-                                                    const grace = (shVal === 8 && smVal === 0) ? 40 : 20;
-                                                    const diff = Math.max(1, cm - (shVal * 60 + smVal + grace));
-                                                    setModalState({ type: 'late', scheduleId: session.id, value: diff, reason: '' });
-                                                } else {
-                                                    handleRecord(session.id, statusToSend);
-                                                }
-                                            }}
-                                            disabled={isDisabled}
-                                            className={`${buttonBaseClass} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'} ${colorClass}`}
-                                            title={Label}
-                                        >
-                                            <Icon size={16} className={isRecorded ? '' : 'animate-pulse'} />
-                                            <span>{Label}</span>
-                                        </button>
-                                    );
-                                })()}
+    // ── Si déjà enregistré par humain → afficher le statut + bouton Modifier ──
+    if (isRecordedByHuman) {
+        const isPresent = session.status === 'present';
+        const isLateRec = session.status === 'late';
+
+        return (
+            <div className="flex items-center gap-1.5">
+                {/* Badge statut actuel */}
+                <span className={`px-2.5 py-1 rounded-lg border font-semibold text-xs flex items-center gap-1
+                    ${isPresent ? 'bg-green-50 text-green-600 border-green-200'
+                    : isLateRec ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                : 'bg-red-50 text-red-600 border-red-200'}`}>
+                    {isPresent  ? <CheckCircle size={13} /> 
+                    : isLateRec ? <AlertTriangle size={13} /> 
+                                : <AlertOctagon size={13} />}
+                    {isPresent  ? t('supervisor.currentSessionCard.present', 'Présent')
+                    : isLateRec ? t('supervisor.currentSessionCard.late', 'En retard')
+                                : t('supervisor.currentSessionCard.absent', 'Absent')}
+                </span>
+
+                {/* Bouton Modifier — toujours visible pendant la session */}
+                <button
+                    onClick={() => {
+                        // Proposer l'inverse du statut actuel
+                        const nextStatus = isPresent ? 'late' : 'present';
+                        if (nextStatus === 'late') {
+                            const diff = Math.max(1, currentMins - lateThreshold);
+                            setModalState({ type: 'late', scheduleId: session.id, value: diff, reason: '' });
+                        } else {
+                            handleRecord(session.id, 'present');
+                        }
+                    }}
+                    disabled={recording === session.id}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border font-semibold text-xs transition-all shadow-sm
+                        bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200
+                        ${recording === session.id ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'}`}
+                >
+                    <RefreshCw size={13} />
+                    <span>{t('supervisor.currentSessionCard.edit', 'Modifier')}</span>
+                </button>
+            </div>
+        );
+    }
+
+    // ── Pas encore enregistré → deux boutons selon l'heure ──
+    const isDisabled = recording === session.id;
+
+    return (
+        <div className="flex items-center gap-1.5">
+
+            {/* Bouton principal : Présent (avant 20 min) ou En retard (après 20 min) */}
+            <button
+                onClick={() => {
+                    if (isAfterLateThreshold) {
+                        const diff = Math.max(1, currentMins - lateThreshold);
+                        setModalState({ type: 'late', scheduleId: session.id, value: diff, reason: '' });
+                    } else {
+                        handleRecord(session.id, 'present');
+                    }
+                }}
+                disabled={isDisabled}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border font-semibold text-sm shadow-sm
+                    ${isAfterLateThreshold
+                        ? 'bg-orange-50 text-orange-500 hover:bg-orange-100 border-orange-200'
+                        : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'}
+                    ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'}`}
+            >
+                {isAfterLateThreshold
+                    ? <><Clock size={15} className="animate-pulse" /><span>{t('supervisor.currentSessionCard.late', 'En retard')}</span></>
+                    : <><CheckCircle size={15} className="animate-pulse" /><span>{t('supervisor.currentSessionCard.present', 'Présent')}</span></>
+                }
+            </button>
+
+            {/* Bouton Absent — toujours visible */}
+            <button
+                onClick={() => setModalState({ type: 'absent', scheduleId: session.id, value: '', reason: '' })}
+                disabled={isDisabled}
+                className={`flex items-center justify-center px-2.5 py-1.5 rounded-lg border transition-all font-semibold text-sm shadow-sm
+                    bg-red-50 text-red-500 hover:bg-red-100 border-red-200
+                    ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'}`}
+                title={t('supervisor.currentSessionCard.absent', 'Absent')}
+            >
+                <AlertOctagon size={15} />
+            </button>
+
+        </div>
+    );
+})()}
                             </div>
                         </div>
                     )) : (

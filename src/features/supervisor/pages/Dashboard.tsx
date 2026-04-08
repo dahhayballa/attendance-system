@@ -6,6 +6,7 @@ import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import SupervisorLayout from '../components/SupervisorLayout';
 import {
     CheckCircle, XCircle, Clock, AlertTriangle} from 'lucide-react';
+import { useAutoAbsent } from '../../../shared/hooks/useAutoAbsent';
 
 const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
 const normalizeText = (value?: string | null): string =>
@@ -76,6 +77,8 @@ const Dashboard = () => {
     const [loading, setLoading]         = useState(true);
     const [time, setTime]               = useState(new Date());
 
+    
+
     const isRtl = i18n.language === 'ar';
     const getGreetingObj = () => {
         const h = new Date().getHours();
@@ -139,6 +142,7 @@ const Dashboard = () => {
             }
         } finally { setLoading(false); }
     }, [user?.name, activeWeek?.id]);
+    useAutoAbsent(fetchData); // ← ici
 
     useEffect(() => { fetchData(); }, [fetchData]);
 

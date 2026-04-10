@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { useStatistics, GroupedStat } from '../hooks/useStatistics';
+import { useStatistics as useStatsHook, GroupedStat } from '../hooks/useStatistics';
 import { useRole } from '../../features/auth/hooks/useRole';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
@@ -35,11 +35,8 @@ type ViewType = 'overview' | 'classes' | 'teachers' | 'subjects';
  * Incorporates informative tooltips for each statistic.
  */
 export const StatisticsPage = () => {
-    const { 
-        kpis, rates, recentAlerts, byClass, byTeacher, bySubject, dailyTrend, timeframe, setTimeframe, 
-        customDate, setCustomDate, loading, error, refetch, options, filters, setFilters 
-    } = useStatistics();
-    const { role } = useRole();
+    const { kpis, rates, recentAlerts, byClass, byTeacher, bySubject, dailyTrend, timeframe, setTimeframe, customDate, setCustomDate, loading, error, refetch, options, filters, setFilters, weeklyComparison } = useStatsHook();
+    const { isAdmin, role } = useRole();
     const { t, i18n } = useTranslation();
     const [activeView, setActiveView] = useState<ViewType>('overview');
     const [showFilters, setShowFilters] = useState(false);
@@ -276,62 +273,96 @@ export const StatisticsPage = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-2">
-                                <Card className="border-gray-100 h-full flex flex-col justify-between" padding="p-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Evolution Chart */}
+                            <Card className="border-gray-100 flex flex-col justify-between" padding="p-8">
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <div className="flex items-center gap-2 group">
+                                            <h3 className="text-lg font-bold text-gray-900">{t('supervisor.statisticsPage.charts.presenceEvolution')}</h3>
+                                            <span 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity cursor-help" 
+                                                title={t('supervisor.statisticsPage.charts.presenceEvolutionSub')}
+                                                onClick={() => showInfo(t('supervisor.statisticsPage.charts.presenceEvolution'), t('supervisor.statisticsPage.charts.presenceEvolutionSub'))}
+                                            >
+                                                <Info size={14} className="text-gray-300 pointer-events-none" />
+                                            </span>
+                                        </div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                            {timeframe === 'day' 
+                                                ? t('supervisor.statisticsPage.charts.activityDay') 
+                                                : t('supervisor.statisticsPage.charts.activityLabel', { count: timeframe === 'week' ? 7 : 30 })
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="h-64 mt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={dailyTrend}>
+                                            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
+                                            <XAxis 
+                                                dataKey="date" 
+                                                axisLine={false} 
+                                                tickLine={false} 
+                                                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                                                tickFormatter={(str) => {
+                                                    const d = new Date(str);
+                                                    const locale = i18n.language === 'ar' ? 'ar-SA' : 'fr-FR';
+                                                    return timeframe === 'day' ? d.toLocaleTimeString(locale, { hour: '2-digit' }) : d.toLocaleDateString(locale, { weekday: 'short' });
+                                                }}
+                                            />
+                                            <YAxis hide />
+                                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                            <Area 
+                                                type="monotone" 
+                                                dataKey="presence" 
+                                                stroke="#0f172a" 
+                                                strokeWidth={3} 
+                                                fillOpacity={1} 
+                                                fill="transparent" 
+                                                name={t('supervisor.statisticsPage.modal.presenceRate')} 
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </Card>
+
+                            {/* Weekly Comparison Chart (Admin Only) */}
+                            {isAdmin && (
+                                <Card className="border-gray-100 flex flex-col justify-between" padding="p-8">
                                     <div className="flex justify-between items-start mb-8">
                                         <div>
-                                            <div className="flex items-center gap-2 group">
-                                                <h3 className="text-lg font-bold text-gray-900">{t('supervisor.statisticsPage.charts.presenceEvolution')}</h3>
-                                                <span 
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity cursor-help" 
-                                                    title={t('supervisor.statisticsPage.charts.presenceEvolutionSub')}
-                                                    onClick={() => showInfo(t('supervisor.statisticsPage.charts.presenceEvolution'), t('supervisor.statisticsPage.charts.presenceEvolutionSub'))}
-                                                >
-                                                    <Info size={14} className="text-gray-300 pointer-events-none" />
-                                                </span>
-                                            </div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-                                                {timeframe === 'day' 
-                                                    ? t('supervisor.statisticsPage.charts.activityDay') 
-                                                    : t('supervisor.statisticsPage.charts.activityLabel', { count: timeframe === 'week' ? 7 : 30 })
-                                                }
-                                            </p>
+                                            <h3 className="text-lg font-bold text-gray-900">Comparaison Semaine par Semaine</h3>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Taux de présence (%)</p>
                                         </div>
                                     </div>
                                     <div className="h-64 mt-4">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={dailyTrend}>
+                                            <BarChart data={weeklyComparison}>
                                                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis 
-                                                    dataKey="date" 
+                                                    dataKey="weekName" 
                                                     axisLine={false} 
                                                     tickLine={false} 
-                                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
-                                                    tickFormatter={(str) => {
-                                                        const d = new Date(str);
-                                                        // Use the selected language locale (fr-FR or ar-SA)
-                                                        const locale = i18n.language === 'ar' ? 'ar-SA' : 'fr-FR';
-                                                        return d.toLocaleDateString(locale, { weekday: 'short' });
-                                                    }}
+                                                    tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 700 }} 
                                                 />
-                                                <YAxis hide />
+                                                <YAxis domain={[0, 100]} hide />
                                                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                                <Area 
-                                                    type="monotone" 
-                                                    dataKey="presence" 
-                                                    stroke="#0f172a" 
-                                                    strokeWidth={3} 
-                                                    fillOpacity={1} 
-                                                    fill="transparent" 
-                                                    name={t('supervisor.statisticsPage.modal.presenceRate')} 
+                                                <Bar 
+                                                    dataKey="rate" 
+                                                    fill="#0f172a" 
+                                                    radius={[6, 6, 0, 0]} 
+                                                    barSize={30}
+                                                    name="Taux de présence"
                                                 />
-                                            </AreaChart>
+                                            </BarChart>
                                         </ResponsiveContainer>
                                     </div>
                                 </Card>
-                            </div>
+                            )}
+                        </div>
 
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <Card className="border-gray-100" padding="p-8 text-center flex flex-col items-center justify-center">
                                 <div className="flex items-center gap-2 group">
                                     <h3 className="text-lg font-bold text-gray-900">{t('supervisor.statisticsPage.charts.presenceRepartition')}</h3>
@@ -367,46 +398,42 @@ export const StatisticsPage = () => {
                                     </div>
                                 </div>
                             </Card>
-                        </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-2">
-                                <Card className="border-gray-50 flex-1 overflow-hidden flex flex-col" padding="p-8">
-                                    <div className="flex items-center gap-2 group">
-                                        <h3 className="text-lg font-bold text-gray-900">{t('supervisor.statisticsPage.charts.topPresence')}</h3>
-                                        <span 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-help" 
-                                            title={t('supervisor.statisticsPage.charts.topPresenceSub')}
-                                            onClick={() => showInfo(t('supervisor.statisticsPage.charts.topPresence'), t('supervisor.statisticsPage.charts.topPresenceSub'))}
-                                        >
-                                            <Info size={14} className="text-gray-300 pointer-events-none" />
-                                        </span>
-                                    </div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 mb-8">
-                                        {t('supervisor.statisticsPage.modal.presenceRate')} {t('supervisor.statisticsPage.labels.byClass')}
-                                    </p>
-                                    
-                                    <div className="space-y-6 flex-1">
-                                        {byClass.slice(0, 5).map((cls, i) => (
-                                            <div key={cls.name} className="group cursor-default">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-[10px] font-black text-gray-400 tracking-widest flex items-center gap-2 uppercase">
-                                                        <span className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 text-[8px] border border-gray-100">{i+1}</span>
-                                                        {cls.name}
-                                                    </span>
-                                                    <span className="text-xs font-black text-gray-950">{cls.rate}%</span>
-                                                </div>
-                                                <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className={`h-full transition-all duration-1000 ${cls.rate > 80 ? 'bg-emerald-500' : 'bg-orange-500'}`}
-                                                        style={{ width: `${cls.rate}%` }}
-                                                    ></div>
-                                                </div>
+                            <Card className="border-gray-50 overflow-hidden flex flex-col" padding="p-8">
+                                <div className="flex items-center gap-2 group">
+                                    <h3 className="text-lg font-bold text-gray-900">{t('supervisor.statisticsPage.charts.topPresence')}</h3>
+                                    <span 
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity cursor-help" 
+                                        title={t('supervisor.statisticsPage.charts.topPresenceSub')}
+                                        onClick={() => showInfo(t('supervisor.statisticsPage.charts.topPresence'), t('supervisor.statisticsPage.charts.topPresenceSub'))}
+                                    >
+                                        <Info size={14} className="text-gray-300 pointer-events-none" />
+                                    </span>
+                                </div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 mb-8">
+                                    {t('supervisor.statisticsPage.modal.presenceRate')} {t('supervisor.statisticsPage.labels.byClass')}
+                                </p>
+                                
+                                <div className="space-y-6 flex-1">
+                                    {byClass.slice(0, 5).map((cls, i) => (
+                                        <div key={cls.name} className="group cursor-default">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-black text-gray-400 tracking-widest flex items-center gap-2 uppercase">
+                                                    <span className="w-5 h-5 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 text-[8px] border border-gray-100">{i+1}</span>
+                                                    {cls.name}
+                                                </span>
+                                                <span className="text-xs font-black text-gray-950">{cls.rate}%</span>
                                             </div>
-                                        ))}
-                                    </div>
-                                </Card>
-                            </div>
+                                            <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-1000 ${cls.rate > 80 ? 'bg-emerald-500' : 'bg-orange-500'}`}
+                                                    style={{ width: `${cls.rate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
 
                             <Card className="border-gray-100 flex flex-col" padding="p-8">
                                 <div className="flex items-center gap-2 group">

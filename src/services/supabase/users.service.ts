@@ -183,4 +183,57 @@ export const usersService = {
     if (error) throw error;
     return true;
   },
+
+  // 6. Vérifier si un email existe déjà
+  checkEmailExists: async (email: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return !!data;
+  },
+
+  // 7. Récupérer les 20 derniers pointages d'un utilisateur spécifique
+  getUserRecentActivity: async (userId: string) => {
+    const { data, error } = await supabase
+      .from('attendance_logs')
+      .select(`
+        id,
+        status,
+        recorded_at,
+        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject)
+      `)
+      .eq('recorded_by', userId)
+      .order('recorded_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return data;
+  },
+
+  // 8. Récupérer les utilisateurs avec leur date de dernière activité
+  getUsersWithLastActivity: async () => {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, name, role')
+      .in('role', ['supervisor', 'surveillance'])
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    return await Promise.all((users || []).map(async (u) => {
+      const { data: lastLog } = await supabase
+        .from('attendance_logs')
+        .select('recorded_at')
+        .eq('recorded_by', u.id)
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      return { ...u, last_activity: lastLog?.recorded_at || null };
+    }));
+  },
 };

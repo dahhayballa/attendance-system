@@ -13,6 +13,7 @@ export const DailyAttendanceManagerPage = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
     const { toast } = useToast();
+    const weekDays = t('common.weekDays', { returnObjects: true }) as string[];
     
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -26,22 +27,25 @@ export const DailyAttendanceManagerPage = () => {
 
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const getTodayNameFr = () => {
-        const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        return daysFr[new Date().getDay()];
+    const getTodayName = () => {
+        const day = new Date().getDay();
+        const index = day === 0 ? 6 : day - 1;
+        return weekDays[index];
     };
 
     const loadTodaySchedules = async () => {
         try {
             setLoading(true);
-            const todayFr = getTodayNameFr();
-            // Fetch all schedules for today. Not restricted by active week, allowing global admin override for any week if needed,
-            // or we could use useActiveWeek. Let's just fetch for today's day regardless of the week for safety, or we assume they filter.
-            const data = await getSchedules({ day: todayFr });
+            const daysDb = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            const day = new Date().getDay();
+            const index = day === 0 ? 6 : day - 1;
+            const todayDb = daysDb[index];
+            
+            const data = await getSchedules({ day: todayDb });
             setSchedules(data || []);
         } catch (error) {
             console.error('Failed to load schedules:', error);
-            toast.error(t('admin.dashboard.loadError', 'Erreur de chargement'));
+            toast.error(t('admin.daily.loadError'));
         } finally {
             setLoading(false);
         }
@@ -63,17 +67,17 @@ export const DailyAttendanceManagerPage = () => {
                 targetId,
                 status,
                 user.id,
-                `Modification Administrateur (${status})`
+                `Correction Administrateur (${status})`
             );
             
             // Local UI update instantly
             setSchedules(prev => prev.map(s => s.id === targetId ? { ...s, status } : s));
             
-            toast.success(t('supervisor.currentSessionCard.toast' + status.charAt(0).toUpperCase() + status.slice(1), 'Statut mis à jour'));
+            toast.success(t('admin.daily.successUpdate'));
             setModalState({ scheduleId: null, teacherName: '' });
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || 'Erreur lors de la modification');
+            toast.error(t('admin.daily.errorUpdate'));
         } finally {
             setIsUpdating(false);
         }
@@ -87,55 +91,60 @@ export const DailyAttendanceManagerPage = () => {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6" dir="ltr">
-                <div className="flex justify-between items-center bg-white border border-gray-100 p-6 rounded-2xl shadow-sm relative overflow-hidden">
-                    <div className="relative z-10">
-                        <h2 className="text-2xl font-bold flex items-center gap-3 text-gray-900 border-l-4 border-orange-500 pl-3">
-                            <RefreshCw className="text-orange-500" /> Gestion Quotidienne
-                        </h2>
-                        <p className="text-gray-500 mt-2 font-medium">Modifier et forcer la présence des professeurs pour le dernier jour ({getTodayNameFr()})</p>
+            <div className="space-y-5 pb-12 animate-in fade-in duration-700" dir="ltr">
+                <div className="flex justify-between items-center bg-white border border-gray-100 p-4 rounded-3xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-900 border border-gray-100">
+                             <RefreshCw size={18} className="text-gray-950" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-950 tracking-tight">
+                                {t('admin.daily.pageTitle')}
+                            </h2>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{t('admin.daily.pageSubtitle')} ({getTodayName()})</p>
+                        </div>
                     </div>
                 </div>
 
-                <Card className="shadow-sm border-gray-100 p-0 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                <Card className="shadow-sm border-gray-100 p-0 overflow-hidden rounded-3xl">
+                    <div className="p-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-3 w-full md:w-auto">
                             <div className="relative w-full md:w-96">
-                                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                                <Search className="absolute ltr:left-3 rtl:right-3 top-2 text-gray-400" size={13} />
                                 <input
                                     type="text"
-                                    placeholder="Rechercher par professeur, classe, matière..."
+                                    placeholder={t('admin.daily.searchPlaceholder')}
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                                    className="w-full ltr:pl-8 ltr:pr-4 rtl:pr-8 rtl:pl-4 py-1.5 border border-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-gray-200 focus:border-gray-400 transition-all"
                                 />
                             </div>
                         </div>
-                        <div className="text-sm font-bold text-gray-500">
-                            {filteredSchedules.length} Séances aujourd'hui
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            {filteredSchedules.length} {t('admin.liveDashboard.statSessions')}
                         </div>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="text-xs text-gray-500 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-4 font-bold">Heure</th>
-                                    <th className="px-6 py-4 font-bold text-center">Progression</th>
-                                    <th className="px-6 py-4 font-bold">Professeur</th>
-                                    <th className="px-6 py-4 font-bold">Classe & Matière</th>
-                                    <th className="px-6 py-4 font-bold text-center">Statut Actuel</th>
-                                    <th className="px-6 py-4 font-bold text-center">Action</th>
+                                    <th className="px-4 py-3 font-black tracking-widest">{t('admin.daily.colTime')}</th>
+                                    <th className="px-4 py-3 font-black tracking-widest text-center">{t('admin.liveDashboard.progressLabel')}</th>
+                                    <th className="px-4 py-3 font-black tracking-widest">{t('admin.daily.colTeacher')}</th>
+                                    <th className="px-4 py-3 font-black tracking-widest">{t('admin.daily.colClass')} & {t('admin.daily.colSubject')}</th>
+                                    <th className="px-4 py-3 font-black tracking-widest text-center">{t('admin.daily.colStatus')}</th>
+                                    <th className="px-4 py-3 font-black tracking-widest text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-400 font-medium">Chargement des séances...</td>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-400 font-medium">{t('admin.daily.loading')}</td>
                                     </tr>
                                 ) : filteredSchedules.length > 0 ? (
                                     filteredSchedules.map(session => {
-                                        // Calculate progress if session is ongoing today
                                         const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
                                         const [sh, sm] = (session.time_start || '00:00').split(':').map(Number);
                                         const [eh, em] = (session.time_end || '00:00').split(':').map(Number);
@@ -150,50 +159,48 @@ export const DailyAttendanceManagerPage = () => {
 
                                         const isPresent = session.status === 'present';
                                         const isLate = session.status === 'late';
-                                        
-                                        // Si c'est absent mais sans recorded_by, c'est l'absence automatique du système, que l'admin souhaite voir comme "En attente" (non traité)
                                         const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
                                         const isPending = !session.status || session.status === 'pending' || isAutoAbsent;
                                         
                                         return (
-                                            <tr key={session.id} className="bg-white hover:bg-orange-50/30 transition-colors group">
-                                                <td className="px-6 py-4 font-mono font-bold text-gray-600">
+                                            <tr key={session.id} className="bg-white hover:bg-gray-50/50 transition-colors group border-b border-gray-50">
+                                                <td className="px-4 py-2.5 font-black text-gray-950 text-[11px]">
                                                     {session.time_start?.slice(0, 5)} - {session.time_end?.slice(0, 5)}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="w-16 h-2 bg-gray-100 rounded-full mx-auto overflow-hidden">
+                                                <td className="px-4 py-2.5 text-center">
+                                                    <div className="w-12 h-1 bg-gray-50 rounded-full mx-auto overflow-hidden">
                                                         <div 
-                                                            className={`h-full rounded-full ${progress === 100 ? 'bg-gray-400' : progress > 0 ? 'bg-orange-500' : 'bg-transparent'}`}
+                                                            className={`h-full rounded-full transition-all duration-700 ${progress === 100 ? 'bg-gray-400' : progress > 0 ? 'bg-orange-500' : 'bg-transparent'}`}
                                                             style={{ width: `${progress}%` }}
                                                         />
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 font-bold text-gray-900">{session.teacher}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-gray-700">{session.class}</div>
-                                                    <div className="text-xs text-gray-400 mt-0.5">{session.subject}</div>
+                                                <td className="px-4 py-2.5 font-black text-gray-950 uppercase tracking-tight text-xs">{session.teacher}</td>
+                                                <td className="px-4 py-2.5">
+                                                    <div className="font-bold text-gray-950 text-xs uppercase tracking-tight">{session.class}</div>
+                                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{session.subject}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-4 py-2.5 text-center">
                                                     {isPending ? (
-                                                        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200">
-                                                            En attente
+                                                        <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-gray-100">
+                                                            {t('admin.daily.statusPending')}
                                                         </span>
                                                     ) : (
-                                                        <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${
-                                                            isPresent ? 'bg-green-50 text-green-700 border-green-200' :
-                                                            isLate ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                                            'bg-red-50 text-red-700 border-red-200'
+                                                        <span className={`px-2 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${
+                                                            isPresent ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                            isLate ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                            'bg-rose-50 text-rose-600 border-rose-100'
                                                         }`}>
-                                                            {isPresent ? 'Présent' : isLate ? 'En retard' : 'Absent'}
+                                                            {isPresent ? t('admin.daily.btnPresent') : isLate ? t('admin.daily.btnLate') : t('admin.daily.btnAbsent')}
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-4 py-2.5 text-center">
                                                     <button 
                                                         onClick={() => setModalState({ scheduleId: session.id, teacherName: session.teacher || '' })}
-                                                        className="px-3 py-1.5 bg-white border border-orange-200 text-orange-600 hover:bg-orange-50 font-bold text-xs rounded-xl shadow-sm transition-all"
+                                                        className="px-3 py-1.5 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-sm active:scale-95"
                                                     >
-                                                        Modifier / Forcer
+                                                        {t('supervisor.currentSessionCard.edit')}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -202,7 +209,7 @@ export const DailyAttendanceManagerPage = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-gray-400 font-medium">
-                                            Aucune séance trouvée.
+                                            {t('admin.daily.noSessions')}
                                         </td>
                                     </tr>
                                 )}
@@ -211,49 +218,48 @@ export const DailyAttendanceManagerPage = () => {
                     </div>
                 </Card>
 
-                {/* MODAL POUR MODIFIER L'ÉTAT */}
                 {modalState.scheduleId && (
-                    <Modal title={`Modifier l'état : ${modalState.teacherName}`} onClose={() => !isUpdating && setModalState({ scheduleId: null, teacherName: '' })}>
+                    <Modal title={t('admin.daily.modalTitle', { name: modalState.teacherName })} onClose={() => !isUpdating && setModalState({ scheduleId: null, teacherName: '' })}>
                         <div className="space-y-4 pt-2">
                             <p className="text-sm font-medium text-gray-600 mb-4">
-                                En tant qu'administrateur, vous pouvez forcer le statut de présence de ce professeur. Cela écrasera toute donnée précédente avec la mention de cette intervention.
+                                {t('admin.liveDashboard.pageSubtitle')}
                             </p>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <button
                                     disabled={isUpdating}
                                     onClick={() => handleStatusChange('present')}
-                                    className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-all font-bold group disabled:opacity-50"
+                                    className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-emerald-100 bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 transition-all font-black uppercase tracking-widest text-[10px] group disabled:opacity-50"
                                 >
-                                    <CheckCircle size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                    <span>Marquer Présent</span>
+                                    <CheckCircle size={20} className="mb-2 group-hover:scale-110 transition-transform" />
+                                    <span>{t('admin.daily.btnPresent')}</span>
                                 </button>
                                 
                                 <button
                                     disabled={isUpdating}
                                     onClick={() => handleStatusChange('late')}
-                                    className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 transition-all font-bold group disabled:opacity-50"
+                                    className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-amber-100 bg-amber-50/50 text-amber-600 hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] group disabled:opacity-50"
                                 >
-                                    <AlertTriangle size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                    <span>Marquer Retard</span>
+                                    <AlertTriangle size={20} className="mb-2 group-hover:scale-110 transition-transform" />
+                                    <span>{t('admin.daily.btnLate')}</span>
                                 </button>
-
+ 
                                 <button
                                     disabled={isUpdating}
                                     onClick={() => handleStatusChange('absent')}
-                                    className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-all font-bold group disabled:opacity-50"
+                                    className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-rose-100 bg-rose-50/50 text-rose-600 hover:bg-rose-100 transition-all font-black uppercase tracking-widest text-[10px] group disabled:opacity-50"
                                 >
-                                    <AlertOctagon size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                    <span>Marquer Absent</span>
+                                    <AlertOctagon size={20} className="mb-2 group-hover:scale-110 transition-transform" />
+                                    <span>{t('admin.daily.btnAbsent')}</span>
                                 </button>
                             </div>
 
                             <button 
                                 onClick={() => setModalState({ scheduleId: null, teacherName: '' })}
                                 disabled={isUpdating}
-                                className="w-full py-2.5 mt-4 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-all"
+                                className="w-full py-2.5 mt-4 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-all"
                             >
-                                Annuler
+                                {t('admin.daily.btnCancel')}
                             </button>
                         </div>
                     </Modal>

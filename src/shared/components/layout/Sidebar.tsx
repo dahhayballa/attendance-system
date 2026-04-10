@@ -39,7 +39,9 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},
             { id: 'users',       label: t('admin.sidebar.users'),              icon: Users,           path: '/admin/users'},
             { id: 'reports',     label: t('admin.sidebar.reports'),            icon: FileText,        path: '/admin/reports'   },
+            { id: 'logs',        label: t('admin.sidebar.logs', 'Registre d\'Audit'), icon: History,         path: '/admin/logs'      },
             { id: 'statistics',  label: t('admin.sidebar.statistics'),         icon: BarChart3,       path: '/admin/statistics' },
+            { id: 'weeks',       label: t('admin.sidebar.weeks', 'Gestion Semaines'), icon: Calendar,    path: '/admin/weeks' },
         ]},
     ];
 

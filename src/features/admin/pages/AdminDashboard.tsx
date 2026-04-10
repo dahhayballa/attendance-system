@@ -1,103 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WeekUploader } from '../components/WeekUploader';
 import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
-import {  Trash2, Calendar, Users, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
+import { 
+    Users, TrendingUp, Calendar, ArrowRight, 
+    Activity, Shield, FileText, ChevronRight 
+} from 'lucide-react';
+import { StatsWidget } from '../components/StatsWidget';
 import { Layout } from '../../../shared/components/layout/Layout';
+import { Link } from 'react-router-dom';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+    Tooltip, ResponsiveContainer, Cell 
+} from 'recharts';
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, recorded: 0, rate: 0 });
-  const [weeks, setWeeks] = useState<any[]>([]);
-  const [,setRecentLogs] = useState<any[]>([]);
+  const [activeWeek, setActiveWeek] = useState<any>(null);
   const [analytics, setAnalytics] = useState<{ topTeachers: any[], topClasses: any[] }>({ topTeachers: [], topClasses: [] });
-  const [, setLoading] = useState(true);
-  
-  // Nouveaux états pour le filtrage
-  const [selectedWeek] = useState<string>('all');
-  const [selectedTeacher] = useState<string>('all');
-  const [selectedClass] = useState<string>('all');
-  const [selectedSubject] = useState<string>('all');
-  const [, setFilterOptions] = useState<{ teachers: {label: string, value: string}[]; classes: string[]; subjects: {label: string, value: string}[] }>({ teachers: [], classes: [], subjects: [] });
-  
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-
-      let finalTeacher = selectedTeacher !== 'all' ? selectedTeacher.split('|')[0] : 'all';
-      let finalSubject = selectedSubject !== 'all' ? selectedSubject.split('|')[0] : 'all';
-      
-      const implicitSubjectFromTeacher = selectedTeacher !== 'all' ? selectedTeacher.split('|')[1] : null;
-      const implicitTeacherFromSubject = selectedSubject !== 'all' ? selectedSubject.split('|')[1] : null;
-
-      if (implicitSubjectFromTeacher && finalSubject === 'all') {
-        finalSubject = implicitSubjectFromTeacher;
-      }
-      if (implicitTeacherFromSubject && finalTeacher === 'all') {
-        finalTeacher = implicitTeacherFromSubject;
-      }
-
-      const fetchedWeeks = await adminService.getWeeksWithCounts();
-
-      let exactDateStart: string | undefined;
-      let exactDateEnd: string | undefined;
-
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      
-      const start = new Date(now);
-      start.setDate(now.getDate() - diffToMonday);
-      start.setHours(0, 0, 0, 0);
-      
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
-
-      let targetWeekId: string | undefined = undefined;
-
-      if (selectedWeek !== 'all') {
-          const target = fetchedWeeks.find(w => w.id === selectedWeek);
-          if (target && target.start_date) {
-              targetWeekId = target.id;
-              const tgtStart = new Date(target.start_date);
-              tgtStart.setHours(0, 0, 0, 0);
-              start.setTime(tgtStart.getTime());
-              
-              const tgtEnd = new Date(tgtStart);
-              tgtEnd.setDate(tgtStart.getDate() + 6);
-              tgtEnd.setHours(23, 59, 59, 999);
-              end.setTime(tgtEnd.getTime());
-          }
-      }
-
-      exactDateStart = start.toISOString();
-      exactDateEnd = end.toISOString();
-
-      const filters = {
-        weekId: targetWeekId,
-        teacher: finalTeacher,
-        className: selectedClass,
-        subject: finalSubject,
-        isLive: true,
-        exactDateStart,
-        exactDateEnd
-      };
-      
-      const [statsData, logsData, analyticsData, optionsData] = await Promise.all([
-        adminService.getGlobalStats(filters),
-        adminService.getRecentLogs(filters),
-        adminService.getAbsenceAnalytics(filters),
-        adminService.getFiltersOptions()
+      const [fetchedWeeks, analyticsData] = await Promise.all([
+        adminService.getWeeksWithCounts(),
+        adminService.getAbsenceAnalytics()
       ]);
-      setStats(statsData as any);
-      setWeeks(fetchedWeeks);
-      setRecentLogs(logsData);
+
+      const current = fetchedWeeks.find((w: any) => w.is_active) || fetchedWeeks[0];
+      setActiveWeek(current);
       setAnalytics(analyticsData);
-      if (optionsData) setFilterOptions(optionsData);
     } catch (error) {
       toast.error(t('admin.dashboard.loadError'));
     } finally {
@@ -105,339 +39,212 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadDashboardData(); }, [selectedWeek, selectedTeacher, selectedClass, selectedSubject]);
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  const handleDeleteWeek = async (id: string) => {
-    if (!window.confirm(t('admin.dashboard.deleteWeekConfirm'))) return;
-    try {
-      await adminService.deleteWeek(id);
-      toast.success(t('admin.dashboard.deleteWeekSuccess'));
-      loadDashboardData();
-    } catch (error) {
-      toast.error(t('admin.dashboard.deleteWeekError'));
-    }
-  };
+  const QuickActionBtn = ({ to, icon, label, description, color }: any) => (
+    <Link 
+      to={to} 
+      className="group bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:bg-gray-50 transition-all duration-300 flex flex-col gap-3"
+    >
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${color}`}>
+        {React.cloneElement(icon as React.ReactElement)}
+      </div>
+      <div>
+        <h3 className="font-black text-gray-950 text-xs uppercase tracking-tight">{label}</h3>
+        <p className="text-[10px] text-gray-400 font-medium mt-1 leading-relaxed">{description}</p>
+      </div>
+      <div className="mt-auto flex justify-end">
+        <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 group-hover:text-white transition-all">
+          <ChevronRight size={14} />
+        </div>
+      </div>
+    </Link>
+  );
 
-  const progressPercent = stats.total > 0 ? Math.round((stats.recorded / stats.total) * 100) : 0;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+             <div className="w-10 h-10 border-2 border-gray-100 border-t-black rounded-full animate-spin"></div>
+             <p className="text-gray-400 text-sm font-medium animate-pulse">{t('common.loading', 'Chargement...')}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="space-y-6 pb-8" dir="ltr">
-
+      <div className="space-y-5 pb-12 animate-in fade-in duration-700" dir="ltr">
+        
         {/* ── Header ── */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 px-2">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
+            <h1 className="text-xl font-black text-gray-950 tracking-tight leading-tight">
               {t('admin.dashboard.pageTitle')}
             </h1>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">{t('admin.dashboard.pageSubtitle')}</p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* <select
-              value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
-            >
-              <option value="all">Toutes les semaines</option>
-              {weeks.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-            </select> */}
-
-            {/* <select
-              value={selectedTeacher}
-              onChange={(e) => setSelectedTeacher(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[200px] truncate"
-            >
-              <option value="all">Les Professeurs</option>
-              {filterOptions.teachers?.map((t, idx) => <option key={idx} value={t.value}>{t.label}</option>)}
-            </select>
-            
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
-            >
-              <option value="all">Les Classes</option>
-              {filterOptions.classes?.map((c, idx) => <option key={idx} value={c}>{c}</option>)}
-            </select>
-
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 font-bold text-gray-700 min-w-[160px] cursor-pointer shadow-sm flex-1 md:flex-none max-w-[180px] truncate"
-            >
-              <option value="all">Les Matières</option>
-              {filterOptions.subjects?.map((s, idx) => <option key={idx} value={s.value}>{s.label}</option>)}
-            </select>
-
-            <button
-              onClick={loadDashboardData}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all text-xs font-bold shadow-sm disabled:opacity-50 shrink-0 w-full md:w-auto"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Actualiser
-            </button> */}
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+              {t('admin.dashboard.pageSubtitle')}
+            </p>
           </div>
         </div>
 
-        {/* ── Stat Cards ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-          <StatCard
-            title={t('admin.dashboard.statTotalSessions')}
-            value={stats.total}
-            icon={<Calendar size={16} />}
-            accent="orange"
-          />
-          <StatCard
-            title={t('admin.dashboard.statPresent')}
-            value={stats.present}
-            icon={<CheckCircle size={16} />}
-            accent="green"
-          />
-          <StatCard
-            title={t('admin.dashboard.statAbsent')}
-            value={stats.absent}
-            icon={<XCircle size={16} />}
-            accent="red"
-          />
-          <StatCard
-            title={t('admin.dashboard.statLate')}
-            value={stats.late || 0}
-            icon={<Clock size={16} />}
-            accent="amber"
-          />
-          <StatCard
-            title={t('admin.dashboard.statRate')}
-            value={`${stats.rate}%`}
-            icon={<TrendingUp size={16} />}
-            accent="blue"
-            className="col-span-2 sm:col-span-1"
-          />
+        {/* ── Quick Navigation ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+           <QuickActionBtn 
+             to="/admin/live" 
+             icon={<Activity size={24} />} 
+             label={t('admin.sidebar.liveDashboard')} 
+             description={t('admin.dashboard.quickLiveDesc', 'Surveillance des présences en temps réel')}
+             color="bg-red-50 text-red-600"
+           />
+           <QuickActionBtn 
+             to="/admin/weeks" 
+             icon={<Calendar size={24} />} 
+             label={t('admin.sidebar.weeks')} 
+             description={t('admin.dashboard.quickWeeksDesc', 'Importation et configuration du calendrier')}
+             color="bg-orange-50 text-orange-600"
+           />
+           <QuickActionBtn 
+             to="/admin/users" 
+             icon={<Shield size={24} />} 
+             label={t('admin.sidebar.users')} 
+             description={t('admin.dashboard.quickUsersDesc', 'Gestion des accès et des rôles')}
+             color="bg-blue-50 text-blue-600"
+           />
+           <QuickActionBtn 
+             to="/admin/reports" 
+             icon={<FileText size={24} />} 
+             label={t('admin.sidebar.reports')} 
+             description={t('admin.dashboard.quickReportsDesc', 'Historique complet et exports Excel')}
+             color="bg-purple-50 text-purple-600"
+           />
         </div>
 
-        {/* ── Progress Bar ── */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500" />
-              <span className="text-sm font-bold text-gray-800">{t('admin.dashboard.progressTitle')}</span>
-            </div>
-            <span className="text-xs font-black text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1 rounded-lg">
-              {t('admin.dashboard.progressSessions', { recorded: stats.recorded, total: stats.total })}
-            </span>
-          </div>
-
-          <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">
-              {t('admin.dashboard.progressLabel')}
-            </span>
-            <span className="text-xs font-black text-orange-500">{progressPercent}%</span>
-          </div>
-        </div>
-
-        {/* ── Zones de Risques (Absences) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {/* Top Teachers Absences */}
-           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-                 <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-red-500" />
-                    <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.teachersAbsenceTitle')}</span>
-                 </div>
-                 <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-md font-bold uppercase border border-red-100">Top 5</span>
-              </div>
-              <div className="p-5 flex-1 space-y-4">
-                 {analytics.topTeachers.length > 0 ? (
-                    analytics.topTeachers.map((teacher, idx) => (
-                       <div key={idx} className="group">
-                          <div className="flex justify-between items-start mb-1.5">
-                             <div>
-                               <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors uppercase tracking-tight block leading-tight">{teacher.name}</span>
-                               {teacher.subject && teacher.class && (
-                                 <span className="text-[10px] font-semibold text-gray-500 mt-1 block tracking-wide">
-                                   <span className="text-gray-400">{t('admin.dashboard.subjectLabel')}:</span> <span className="text-gray-600">{teacher.subject}</span> <span className="mx-1 text-gray-300">•</span> <span className="text-gray-400">{t('admin.dashboard.classLabel')}:</span> <span className="text-gray-600">{teacher.class}</span>
-                                 </span>
-                               )}
-                             </div>
-                             <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg whitespace-nowrap">{teacher.count} <span className="text-[10px] opacity-70">{t('admin.dashboard.absencesCount', { count: teacher.count })}</span></span>
-                          </div>
-                          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                             <div 
-                                className="h-full bg-red-500 rounded-full transition-all duration-1000 group-hover:bg-orange-500 shadow-sm"
-                                style={{ width: `${Math.min((teacher.count / 5) * 100, 100)}%` }}
-                             />
-                          </div>
-                       </div>
-                    ))
-                 ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">{t('admin.dashboard.noAbsences')}</div>
-                 )}
-              </div>
-           </div>
-
-           {/* Top Classes Absences */}
-           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-                 <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-orange-500" />
-                    <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.classesImpactedTitle')}</span>
-                 </div>
-                 <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md font-bold uppercase border border-orange-100">Top 5</span>
-              </div>
-              <div className="p-5 flex-1 space-y-4">
-                 {analytics.topClasses.length > 0 ? (
-                    analytics.topClasses.map((cl, idx) => (
-                       <div key={idx} className="group">
-                          <div className="flex justify-between items-end mb-1.5">
-                             <span className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{cl.name}</span>
-                             <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">{cl.count} <span className="text-[10px] opacity-70">{t('admin.dashboard.sessionsLost', { count: cl.count })}</span></span>
-                          </div>
-                          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                             <div 
-                                className="h-full bg-orange-500 rounded-full transition-all duration-1000 group-hover:bg-red-500 shadow-sm"
-                                style={{ width: `${Math.min((cl.count / 10) * 100, 100)}%` }}
-                             />
-                          </div>
-                       </div>
-                    ))
-                 ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-xs italic py-8">{t('admin.dashboard.noImpact')}</div>
-                 )}
-              </div>
-           </div>
-        </div>
-
-        {/* ── Week Uploader ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-orange-500" />
-            <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.importTitle')}</span>
-          </div>
-          <div className="p-5">
-            <WeekUploader onUploadComplete={loadDashboardData} />
-          </div>
-        </div>
-
-        {/* ── Weeks Table ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2">
-            <span className="font-bold text-gray-800 text-sm">{t('admin.dashboard.weeksTableTitle')}</span>
-            <span className="bg-orange-50 text-orange-600 text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-wider font-bold border border-orange-100">
-              {t('admin.dashboard.weeksCount_other', { count: weeks.length })}
-            </span>
-          </div>
-
-          {/* Mobile cards (< md) */}
-          <div className="md:hidden divide-y divide-gray-50">
-            {weeks.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">{t('admin.dashboard.noWeeks')}</div>
-            ) : (
-              weeks.map((week) => (
-                <div key={week.id} className="p-4 flex items-center justify-between gap-3 hover:bg-orange-50/30 transition-colors">
-                  <div className="min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">{week.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {new Date(week.start_date).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="bg-gray-100 text-gray-700 font-bold px-2.5 py-1 rounded-lg text-xs">
-                      {week.schedules?.[0]?.count || 0} {t('admin.dashboard.sessionsSuffix')}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteWeek(week.id)}
-                      className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+        {/* ── Active Week Summary (Inline) ── */}
+        <div className="bg-gray-900 rounded-3xl p-5 text-white shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+            <div className="flex items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                    <Calendar size={22} className="text-orange-400" />
                 </div>
-              ))
-            )}
-          </div>
+                <div>
+                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">{t('admin.dashboard.activeWeekLabel')}</p>
+                   <h2 className="text-xl font-black">{activeWeek?.name || '...'}</h2>
+                   <p className="text-[10px] text-gray-400 mt-1 font-medium italic">
+                      {activeWeek?.stats?.total || 0} {t('admin.liveDashboard.statSessions')}
+                   </p>
+                </div>
+            </div>
+            <Link to="/admin/weeks" className="relative z-10 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                {t('admin.weeks.activeBtnLabel', 'Changer de semaine')}
+                <ArrowRight size={15} />
+            </Link>
+        </div>
 
-          {/* Desktop table (≥ md) */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">
-                <tr>
-                  <th className="px-5 py-3 font-bold">{t('admin.dashboard.weekColName')}</th>
-                  <th className="px-5 py-3 font-bold">{t('admin.dashboard.weekColStart')}</th>
-                  <th className="px-5 py-3 font-bold text-center">{t('admin.dashboard.weekColSessions')}</th>
-                  <th className="px-5 py-3 font-bold text-center">{t('admin.dashboard.weekColActions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {weeks.map((week) => (
-                  <tr key={week.id} className="hover:bg-orange-50/20 transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{week.name}</td>
-                    <td className="px-5 py-3.5 text-sm text-gray-500 font-medium">
-                      {new Date(week.start_date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-xs">
-                        {week.schedules?.[0]?.count || 0} {t('admin.dashboard.sessionsSuffix')}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <button
-                        onClick={() => handleDeleteWeek(week.id)}
-                        className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all"
-                        title="Supprimer"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {weeks.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-10 text-center text-gray-400 text-sm">
-                      {t('admin.dashboard.noWeeks')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* ── Global KPI Stats ── */}
+        <StatsWidget filters={{}} showProgress={true} />
+
+        {/* ── Charts ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Top Teachers Chart */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-50 rounded-xl text-red-600">
+                            <Users size={15} />
+                        </div>
+                        <h3 className="font-black text-gray-950 text-[11px] uppercase tracking-widest">
+                            {t('admin.dashboard.teachersAbsenceTitle')}
+                        </h3>
+                    </div>
+                </div>
+                
+                <div className="h-[280px] w-full">
+                    {analytics.topTeachers.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analytics.topTeachers} layout="vertical" margin={{ left: 40, right: 30 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                                <XAxis type="number" hide />
+                                <YAxis 
+                                    dataKey="name" 
+                                    type="category" 
+                                    width={100} 
+                                    tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} 
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip 
+                                    cursor={{ fill: '#f9fafb' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                                />
+                                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                                    {analytics.topTeachers.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : '#f87171'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
+                            {t('admin.dashboard.noAbsences')}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Top Classes Chart */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                            <TrendingUp size={15} />
+                        </div>
+                        <h3 className="font-black text-gray-950 text-[11px] uppercase tracking-widest">
+                            {t('admin.dashboard.classesImpactedTitle')}
+                        </h3>
+                    </div>
+                </div>
+                
+                <div className="h-[280px] w-full">
+                    {analytics.topClasses.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analytics.topClasses} layout="vertical" margin={{ left: 40, right: 30 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                                <XAxis type="number" hide />
+                                <YAxis 
+                                    dataKey="name" 
+                                    type="category" 
+                                    width={100} 
+                                    tick={{ fontSize: 10, fontWeight: 700, fill: '#6b7280' }} 
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip 
+                                    cursor={{ fill: '#f9fafb' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                                />
+                                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                                    {analytics.topClasses.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#3b82f6' : '#60a5fa'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
+                            {t('admin.dashboard.noImpact')}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
 
       </div>
     </Layout>
-  );
-};
-
-// ── Stat Card ──────────────────────────────────────────────────────────────
-const ACCENT_MAP: Record<string, { border: string; icon: string; bg: string; text: string }> = {
-  orange: { border: 'border-l-orange-500', icon: 'bg-orange-100 text-orange-600', bg: '', text: '' },
-  green:  { border: 'border-l-green-500',  icon: 'bg-green-100 text-green-600',   bg: '', text: '' },
-  red:    { border: 'border-l-red-500',    icon: 'bg-red-100 text-red-500',       bg: '', text: '' },
-  amber:  { border: 'border-l-amber-500',  icon: 'bg-amber-100 text-amber-600',   bg: '', text: '' },
-  blue:   { border: 'border-l-blue-500',   icon: 'bg-blue-100 text-blue-600',     bg: '', text: '' },
-};
-
-const StatCard = ({
-  title, value, icon, accent, className = '',
-}: { title: string; value: string | number; icon: React.ReactNode; accent: string; className?: string }) => {
-  const a = ACCENT_MAP[accent] || ACCENT_MAP.orange;
-  return (
-    <div className={`bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 border-l-4 ${a.border} shadow-sm hover:shadow-md transition-all flex items-center gap-3 sm:gap-4 ${className}`}>
-      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${a.icon}`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">{title}</p>
-        <p className="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-0.5">{value}</p>
-      </div>
-    </div>
   );
 };
 

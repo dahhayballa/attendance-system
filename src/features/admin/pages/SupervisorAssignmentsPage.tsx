@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { supervisorAssignmentsService, SupervisorAssignment } from '../../../services/supabase/supervisor-assignments.service';
+import { adminService } from '../../../services/supabase/admin.service';
 import Card from '../../../shared/components/ui/Card';
 import Button from '../../../shared/components/ui/Button';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Trash2, Users, Building, BookOpen, UserPlus } from 'lucide-react';
+import { 
+    Trash2, Users, Building, BookOpen, UserPlus, 
+    LayoutGrid, List, AlertCircle, ChevronRight 
+} from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 
 export const SupervisorAssignmentsPage = () => {
@@ -14,6 +18,11 @@ export const SupervisorAssignmentsPage = () => {
     const [supervisors, setSupervisors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped');
+    
+    // Options for selects
+    const [filterOptions, setFilterOptions] = useState<{ classes: string[], subjects: {label: string, value: string}[] }>({ classes: [], subjects: [] });
+    
     const { toast } = useToast();
 
     // Form state
@@ -28,12 +37,17 @@ export const SupervisorAssignmentsPage = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [assignData, supData] = await Promise.all([
+            const [assignData, supData, optionsData] = await Promise.all([
                 supervisorAssignmentsService.getAssignments(),
-                supervisorAssignmentsService.getSupervisors()
+                supervisorAssignmentsService.getSupervisors(),
+                adminService.getFiltersOptions()
             ]);
             setAssignments(assignData);
             setSupervisors(supData);
+            setFilterOptions({
+                classes: optionsData.classes,
+                subjects: optionsData.subjects
+            });
         } catch (err) {
             toast.error(t('admin.supervisors.loadError'));
         } finally {
@@ -80,34 +94,67 @@ export const SupervisorAssignmentsPage = () => {
         }
     };
 
+    const groupedSupervisors = supervisors.map(sup => {
+        const supAssignments = assignments.filter(a => a.supervisor_id === sup.id);
+        return {
+            ...sup,
+            assignments: supAssignments
+        };
+    }).sort((a, b) => {
+        if (a.assignments.length === 0 && b.assignments.length > 0) return 1;
+        if (a.assignments.length > 0 && b.assignments.length === 0) return -1;
+        return 0;
+    });
+
     return (
         <Layout>
-            <div className="flex flex-col gap-6" dir="ltr">
-                <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-orange-100 text-orange-600 rounded-xl">
-                            <Users size={24} />
+            <div className="space-y-5 pb-12 animate-in fade-in duration-700" dir="ltr">
+                
+                {/* ── Header ── */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                    
+                    <div className="relative z-10 flex items-center gap-3 text-left">
+                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-950 border border-gray-100 uppercase font-black">
+                            <Users size={20} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{t('admin.supervisors.pageTitle')}</h2>
-                            <p className="text-sm font-medium text-gray-500 mt-1">{t('admin.supervisors.pageSubtitle')}</p>
+                            <h2 className="text-xl font-black text-gray-950 tracking-tight">
+                                {t('admin.supervisors.pageTitle')}
+                            </h2>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{t('admin.supervisors.pageSubtitle')}</p>
                         </div>
+                    </div>
+
+                    <div className="flex bg-gray-50 p-1 rounded-xl w-full sm:w-fit border border-gray-100 relative z-10">
+                        <button 
+                            onClick={() => setViewMode('grouped')}
+                            className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grouped' ? 'bg-white text-gray-950 shadow-sm border border-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            <LayoutGrid size={13} /> Vue Superviseur
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('list')}
+                            className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-white text-gray-950 shadow-sm border border-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            <List size={13} /> Liste Globale
+                        </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-col-reverse lg:flex-row">
-                    {/* فورم الإضافة (Nouvelle Affectation) */}
-                    <Card className="lg:col-span-1 border-t-4 border-orange-500 shadow-sm" padding="p-6">
-                        <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
-                            <UserPlus size={18} className="text-orange-500" />
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    {/* ── New Assignment Form ── */}
+                    <Card className="xl:col-span-4 rounded-3xl border-gray-100 shadow-sm self-start" padding="p-6">
+                        <h3 className="font-black text-gray-950 text-[11px] uppercase tracking-widest mb-6 flex items-center gap-3">
+                            <UserPlus size={15} className="text-gray-950" />
                             {t('admin.supervisors.newAssignment')}
                         </h3>
 
-                        <form onSubmit={handleCreate} className="space-y-4">
+                        <form onSubmit={handleCreate} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('admin.supervisors.supervisorLabel')}</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t('admin.supervisors.supervisorLabel')}</label>
                                 <select
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-black text-gray-950 focus:ring-1 focus:ring-gray-200 focus:border-gray-400 outline-none transition-all cursor-pointer"
                                     value={supervisorId}
                                     onChange={(e) => setSupervisorId(e.target.value)}
                                     required
@@ -120,31 +167,43 @@ export const SupervisorAssignmentsPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('admin.supervisors.assignmentTypeLabel')}</label>
-                                <select
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value as any)}
-                                >
-                                    <option value="all">{t('admin.supervisors.typeAll')}</option>
-                                    <option value="class">{t('admin.supervisors.typeClass')}</option>
-                                    <option value="subject">{t('admin.supervisors.typeSubject')}</option>
-                                </select>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t('admin.supervisors.assignmentTypeLabel')}</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['all', 'class', 'subject'] as const).map(tKey => (
+                                        <button
+                                            key={tKey}
+                                            type="button"
+                                            onClick={() => { setType(tKey); setValue(''); }}
+                                            className={`py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${type === tKey ? 'bg-gray-900 border-gray-900 text-white shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                                        >
+                                            {tKey === 'all' ? 'Toutes' : tKey === 'class' ? 'Classe' : 'Matière'}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             {type !== 'all' && (
                                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                                        {type === 'class' ? t('admin.supervisors.classPlaceholder') : t('admin.supervisors.subjectPlaceholder')}
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                                        Sélectionner {type === 'class' ? 'la Classe' : 'la Matière'}
                                     </label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all shadow-sm"
+                                    <select
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-black text-gray-950 focus:ring-1 focus:ring-gray-200 focus:border-gray-400 outline-none transition-all cursor-pointer"
                                         value={value}
                                         onChange={(e) => setValue(e.target.value)}
-                                        placeholder={t('admin.supervisors.valuePlaceholder')}
                                         required
-                                    />
+                                    >
+                                        <option value="">{type === 'class' ? 'Choisir la classe...' : 'Choisir la matière...'}</option>
+                                        {type === 'class' 
+                                            ? filterOptions.classes.map(c => (
+                                                <option key={c} value={c}>{c}</option>
+                                              ))
+                                            : filterOptions.subjects.map(s => {
+                                                const val = s.value.split('|')[0];
+                                                return <option key={val} value={val}>{s.label}</option>;
+                                              })
+                                        }
+                                    </select>
                                 </div>
                             )}
 
@@ -152,75 +211,127 @@ export const SupervisorAssignmentsPage = () => {
                                 type="submit" 
                                 fullWidth 
                                 loading={isSubmitting} 
-                                className="mt-4 bg-orange-600 hover:bg-orange-700 text-white border-transparent"
+                                className="py-2.5 bg-gray-900 border-none text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-black shadow-sm active:scale-95 transition-all mt-2"
                             >
                                 {t('admin.supervisors.addButton')}
                             </Button>
                         </form>
                     </Card>
 
-                    {/* قائمة التعيينات (Affectations Actuelles) */}
-                    <Card className="lg:col-span-2 shadow-sm order-first lg:order-last" padding="p-0">
-                        <div className="p-5 border-b border-gray-100 bg-gray-50/50 font-bold text-gray-800 flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                                <Users size={18} className="text-orange-500" />
-                                {t('admin.supervisors.currentAssignments')}
-                            </span>
-                            <span className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                                {assignments.length} Total
-                            </span>
-                        </div>
-
+                    {/* ── Visualizations ── */}
+                    <div className="xl:col-span-8 space-y-6">
                         {loading ? (
-                            <div className="p-12 text-center flex items-center justify-center flex-col gap-4">
+                            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-gray-100">
                                 <Loading />
-                                <span className="text-gray-400 font-medium text-sm">{t('admin.supervisors.loadingAssignments')}</span>
+                                <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-4">{t('admin.supervisors.loadingAssignments')}</span>
                             </div>
-                        ) : assignments.length === 0 ? (
-                            <div className="p-16 text-center">
-                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Users size={28} className="text-gray-300" />
+                        ) : viewMode === 'list' ? (
+                            <Card className="rounded-3xl shadow-sm border-gray-100 overflow-hidden" padding="p-0">
+                                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                                    <span className="font-black text-gray-950 text-[10px] uppercase tracking-widest">{t('admin.supervisors.listRules', 'Liste complète des règles')}</span>
+                                    <span className="bg-gray-950 text-white text-[9px] font-black px-2 py-0.5 rounded-xl uppercase tracking-widest">
+                                        {assignments.length}
+                                    </span>
                                 </div>
-                                <h3 className="font-bold text-gray-600 mb-1">{t('admin.supervisors.noAssignments')}</h3>
-                                <p className="text-gray-400 text-sm">{t('admin.supervisors.noAssignmentsDetail')}</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                                        <tr>
-                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colSupervisor')}</th>
-                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colType')}</th>
-                                            <th className="px-6 py-4 font-bold">{t('admin.supervisors.colValue')}</th>
-                                            <th className="px-6 py-4 font-bold text-center">{t('admin.supervisors.colActions')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {assignments.map(a => (
-                                            <tr key={a.id} className="hover:bg-orange-50/30 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-gray-900">{a.user?.name || a.user?.email}</td>
-                                                <td className="px-6 py-4">
-                                                    {a.assignment_type === 'all' && <span className="text-purple-700 bg-purple-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm">{t('admin.supervisors.typeAll_badge')}</span>}
-                                                    {a.assignment_type === 'class' && <span className="text-blue-700 bg-blue-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><Building size={12} /> {t('admin.supervisors.typeClass_badge')}</span>}
-                                                    {a.assignment_type === 'subject' && <span className="text-green-700 bg-green-100 px-2.5 py-1 font-semibold text-xs rounded-md shadow-sm flex items-center gap-1.5 w-fit"><BookOpen size={12} /> {t('admin.supervisors.typeSubject_badge')}</span>}
-                                                </td>
-                                                <td className="px-6 py-4 font-medium text-gray-600">{a.assignment_value || '—'}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <button onClick={() => handleDelete(a.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors shadow-sm bg-white border border-transparent hover:border-red-100" title="Supprimer l'affectation">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </td>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-4 py-3 font-black tracking-widest">{t('admin.supervisors.colSupervisor')}</th>
+                                                <th className="px-4 py-3 font-black tracking-widest">{t('admin.supervisors.colType')}</th>
+                                                <th className="px-4 py-3 font-black tracking-widest">{t('admin.supervisors.colValue')}</th>
+                                                <th className="px-4 py-3 font-black tracking-widest text-center">{t('admin.supervisors.colActions')}</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {assignments.map(a => (
+                                                <tr key={a.id} className="group hover:bg-gray-50/50 transition-all border-b border-gray-50">
+                                                    <td className="px-4 py-2.5 font-black text-gray-950 uppercase tracking-tight text-xs">{a.user?.name || a.user?.email}</td>
+                                                    <td className="px-4 py-2.5">
+                                                        {a.assignment_type === 'all' && <span className="text-purple-600 bg-purple-50 px-2 py-0.5 font-black text-[9px] uppercase tracking-widest rounded-xl border border-purple-100">Global</span>}
+                                                        {a.assignment_type === 'class' && <span className="text-blue-600 bg-blue-50 px-2 py-0.5 font-black text-[9px] uppercase tracking-widest rounded-xl border border-blue-100 flex items-center gap-1.5 w-fit"><Building size={10} /> Classe</span>}
+                                                        {a.assignment_type === 'subject' && <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 font-black text-[9px] uppercase tracking-widest rounded-xl border border-emerald-100 flex items-center gap-1.5 w-fit"><BookOpen size={10} /> Matière</span>}
+                                                    </td>
+                                                    <td className="px-4 py-2.5 font-bold text-gray-400 text-[11px] uppercase tracking-tight">{a.assignment_value || 'Toutes les séances'}</td>
+                                                    <td className="px-4 py-2.5 text-center">
+                                                        <button 
+                                                            onClick={() => handleDelete(a.id)} 
+                                                            className="p-1 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {groupedSupervisors.map((sup: any) => (
+                                    <div key={sup.id} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50/30 transition-all group relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <ChevronRight size={18} className="text-gray-200" />
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-black text-lg border border-gray-100">
+                                                {sup.name?.charAt(0) || sup.email?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-gray-950 uppercase tracking-tight text-xs">{sup.name || sup.email}</h4>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{sup.role}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('admin.supervisors.assignmentScope', "Scope d'affectation")}</label>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {sup.assignments.length > 0 ? (
+                                                    sup.assignments.map((a: any) => (
+                                                        <div key={a.id} className="flex items-center gap-2 bg-gray-50 border border-gray-100 pl-2 pr-1 py-1 rounded-xl group/badge shadow-sm">
+                                                            <span className="text-[9px] font-black text-gray-950 uppercase tracking-tight">
+                                                                {a.assignment_type === 'all' ? 'Accès Global' : a.assignment_value}
+                                                            </span>
+                                                            <button 
+                                                                onClick={() => handleDelete(a.id)}
+                                                                className="w-5 h-5 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:border-rose-100 transition-all"
+                                                            >
+                                                                <X size={8} />
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-500">
+                                                        <AlertCircle size={12} />
+                                                        <span className="text-[9px] font-black uppercase tracking-widest">Sans affectation</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-5 pt-4 border-t border-gray-50 flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                            <span className="text-gray-400">Règles: {sup.assignments.length}</span>
+                                            {sup.assignments.some((a: any) => a.assignment_type === 'all') && (
+                                                <span className="text-purple-600 px-2 py-0.5 bg-purple-50 rounded-xl border border-purple-100">Super Admin</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
-                    </Card>
+                    </div>
                 </div>
             </div>
         </Layout>
     );
 };
+
+const X = ({ size }: { size: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+);
 
 export default SupervisorAssignmentsPage;

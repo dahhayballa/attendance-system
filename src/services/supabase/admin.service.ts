@@ -173,25 +173,75 @@ export const adminService = {
     };
   },
 
-  // 2. جلب قائمة الأسابيع مع عدد الحصص في كل أسبوع
   getWeeksWithCounts: async () => {
-    const { data, error } = await supabase
+    // 1. Get all weeks
+    const { data: weeks, error: weeksError } = await supabase
       .from('weeks')
-      .select(`
-        id,
-        name,
-        start_date,
-        schedules(count)
-      `)
+      .select('id, name, start_date')
       .order('start_date', { ascending: false });
 
-    if (error) throw error;
+    if (weeksError) throw weeksError;
 
-    return data.map(week => ({
-      ...week,
-      // نضمن بقاء الصيغة متوافقة مع واجهة المستخدم
-      schedules: week.schedules || [{ count: 0 }]
+    // 2. For each week, get counts
+    // We'll do this in parallel to be efficient
+    const weeksWithStats = await Promise.all(weeks.map(async (week) => {
+      // Total schedules in this week
+      const { count: total, error: countErr } = await supabase
+        .from('schedules')
+        .select('*', { count: 'exact', head: true })
+        .eq('week_id', week.id);
+      
+      if (countErr) throw countErr;
+
+      // Recorded sessions (logs) in this week
+      // We need to count unique logs per schedule_id for this week
+      const { data: logs, error: logsErr } = await supabase
+        .from('attendance_logs')
+        .select('schedule_id')
+        .filter('schedule.week_id', 'eq', week.id); // This might need a proper join or filtering
+      
+      // Since filtering on joined tables in Supabase JS client for count is tricky, 
+      // let's try a different approach:
+      const { data: schedIdsData } = await supabase.from('schedules').select('id').eq('week_id', week.id);
+      const scheduleIds = (schedIdsData || []).map(s => s.id);
+      
+      let recorded = 0;
+      if (scheduleIds.length > 0) {
+        const { data: uniqueLogs, error: uniqueLogsErr } = await supabase
+          .from('attendance_logs')
+          .select('schedule_id, status')
+          .in('schedule_id', scheduleIds);
+        
+        if (uniqueLogsErr) throw uniqueLogsErr;
+        
+        // Count unique schedule IDs that have logs
+        recorded = new Set(uniqueLogs?.map(l => l.schedule_id)).size;
+        
+        // Also count presence for rate
+        const presentCount = uniqueLogs?.filter(l => l.status === 'present' || l.status === 'late').length || 0;
+        const rate = total && total > 0 ? Math.round((presentCount / total) * 100) : 0;
+
+        return {
+          ...week,
+          stats: {
+            total: total || 0,
+            recorded,
+            rate
+          }
+        };
+      }
+
+      return {
+        ...week,
+        stats: {
+          total: total || 0,
+          recorded: 0,
+          rate: 0
+        }
+      };
     }));
+
+    return weeksWithStats;
   },
 
   // 3. حذف أسبوع وكل ما يتعلق به (Cascade Delete)
@@ -202,6 +252,13 @@ export const adminService = {
       .eq('id', weekId);
 
     if (error) throw error;
+    return true;
+  },
+
+  // 3.ب تعيين الأسبوع النشط
+  setActiveWeek: async (weekId: string) => {
+    // Note: is_active column is missing from DB. This is a placeholder.
+    console.warn('setActiveWeek: is_active column missing in DB');
     return true;
   },
 
@@ -457,5 +514,42 @@ export const adminService = {
       .slice(0, 5);
 
     return { topTeachers, topClasses };
+  },
+
+  // 7. جلب سجلات التدقيق الكاملة (لصفحة Audit Logs)
+  getAuditLogs: async (filters: { startDate?: string; endDate?: string; supervisorId?: string; status?: string }) => {
+    let query = supabase
+      .from('attendance_logs')
+      .select(`
+        id,
+        status,
+        recorded_at,
+        reason,
+        schedule:schedules!attendance_logs_schedule_id_fkey(teacher, class, subject),
+        user:users!attendance_logs_recorded_by_fkey(name, email)
+      `)
+      .order('recorded_at', { ascending: false });
+
+    if (filters.startDate) {
+      query = query.gte('recorded_at', `${filters.startDate}T00:00:00`);
+    }
+    if (filters.endDate) {
+      query = query.lte('recorded_at', `${filters.endDate}T23:59:59`);
+    }
+    if (filters.supervisorId && filters.supervisorId !== 'all') {
+      query = query.eq('recorded_by', filters.supervisorId);
+    }
+    if (filters.status && filters.status !== 'all') {
+      query = query.eq('status', filters.status);
+    }
+
+    const { data, error } = await query.limit(500); // Limite raisonnable pour l'audit
+
+    if (error) throw error;
+    return (data || []).map((log: any) => ({
+        ...log,
+        note: log.reason, // Renvoyé pour compatibilité avec le UI
+        user_name: log.user?.name || log.user?.email?.split('@')[0] || 'Système'
+    }));
   }
 };

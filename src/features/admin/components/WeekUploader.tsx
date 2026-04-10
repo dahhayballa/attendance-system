@@ -3,12 +3,14 @@ import Card from '../../../shared/components/ui/Card';
 import Button from '../../../shared/components/ui/Button';
 import { UploadCloud, FileText, X, CheckCircle } from 'lucide-react';
 import { useWeekUpload } from '../hooks/useWeekUpload';
+import { useTranslation } from 'react-i18next';
 
 export interface WeekUploaderProps {
     onUploadComplete?: () => void;
 }
 
 export const WeekUploader = ({ onUploadComplete }: WeekUploaderProps) => {
+    const { t } = useTranslation();
     const [dragActive, setDragActive] = useState<boolean>(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +47,7 @@ export const WeekUploader = ({ onUploadComplete }: WeekUploaderProps) => {
     const handleFile = (file: File) => {
         const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
         if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-            alert('Veuillez importer un fichier Excel valide (.xlsx, .xls)');
+            alert(t('admin.dashboard.importError', 'Veuillez importer un fichier Excel valide (.xlsx, .xls)'));
             return;
         }
         setSelectedFile(file);
@@ -66,7 +68,7 @@ export const WeekUploader = ({ onUploadComplete }: WeekUploaderProps) => {
     };
 
     return (
-        <Card header={<h3 className="text-lg font-bold text-gray-900 pb-2">Importer l'emploi du temps</h3>}>
+        <Card header={<h3 className="text-lg font-bold text-gray-900 pb-2">{t('admin.weeks.uploadTitle')}</h3>}>
             <div dir="ltr">
                 {!selectedFile ? (
                     <div
@@ -89,10 +91,10 @@ export const WeekUploader = ({ onUploadComplete }: WeekUploaderProps) => {
                         />
                         <UploadCloud className={`mx-auto h-12 w-12 mb-4 transition-colors ${dragActive ? 'text-orange-500' : 'text-gray-400'}`} />
                         <p className="text-sm font-bold text-gray-900 mb-1">
-                            Glissez et déposez le fichier Excel ici
+                            {t('admin.dashboard.dragDropPlaceholder', 'Glissez et déposez le fichier Excel ici')}
                         </p>
                         <p className="text-xs font-medium text-gray-500">
-                            ou cliquez pour sélectionner (.xlsx, .xls)
+                            {t('admin.dashboard.clickSelectPlaceholder', 'ou cliquez pour sélectionner (.xlsx, .xls)')}
                         </p>
                     </div>
                 ) : (
@@ -134,7 +136,7 @@ export const WeekUploader = ({ onUploadComplete }: WeekUploaderProps) => {
                             leftIcon={!isUploading && <CheckCircle size={18} />}
                             className="bg-orange-600 hover:bg-orange-700 text-white border-transparent"
                         >
-                            {isUploading ? 'Importation en cours...' : 'Confirmer et Importer'}
+                            {isUploading ? t('admin.daily.importingLabel') : t('admin.daily.importBtnLabel')}
                         </Button>
                     </div>
                 )}

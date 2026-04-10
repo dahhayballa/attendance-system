@@ -10,9 +10,11 @@ import SupervisorDashboard from '../features/supervisor/pages/Dashboard';
 import SupervisorNowPage from '../features/supervisor/pages/SupervisorNowPage';
 import ActionHistoryPage from '../features/supervisor/pages/ActionHistoryPage';
 import DailyAttendanceManagerPage from '../features/admin/pages/DailyAttendanceManagerPage';
-import StatisticsPage from '../shared/pages/StatisticsPage';
+import { AuditLogsPage } from '../features/admin/pages/AuditLogsPage';
+import { StatisticsPage } from '../shared/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
+import WeeksManagementPage from '../features/admin/pages/WeeksManagementPage';
 
 // Attendance Sub-pages
 import TimetablePage from '../features/supervisor/pages/TimetablePage';
@@ -100,6 +102,22 @@ export const Router = () => {
                 element={
                     <ProtectedRoute requireRole="admin">
                         <StatisticsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/logs"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <AuditLogsPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/weeks"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <WeeksManagementPage />
                     </ProtectedRoute>
                 }
             />

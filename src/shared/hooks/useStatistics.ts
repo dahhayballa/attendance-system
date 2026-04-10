@@ -56,11 +56,17 @@ export interface FilterState {
     class: string;
 }
 
+export interface WeeklyComparison {
+    weekName: string;
+    rate: number;
+}
+
 export interface StatisticsData {
     kpis: StatsKPI;
     rates: StatsRates;
     recentAlerts: AlertRecord[];
     dailyTrend: DailyTrend[];
+    weeklyComparison: WeeklyComparison[];
     byClass: GroupedStat[];
     byTeacher: GroupedStat[];
     bySubject: GroupedStat[];
@@ -112,6 +118,7 @@ export const useStatistics = () => {
         rates: INITIAL_RATES,
         recentAlerts: [],
         dailyTrend: [],
+        weeklyComparison: [],
         byClass: [],
         byTeacher: [],
         bySubject: [],
@@ -135,6 +142,19 @@ export const useStatistics = () => {
 
         try {
             setState(prev => ({ ...prev, loading: true, error: null }));
+
+            // 1. Get filter options for Admin if applicable
+            let adminOptions: FilterOptions | null = null;
+            if (isAdmin) {
+                const { data: scheduleData } = await supabase.from('schedules').select('teacher, class, subject');
+                if (scheduleData) {
+                    adminOptions = {
+                        teachers: Array.from(new Set(scheduleData.map(s => s.teacher).filter(Boolean))).sort() as string[],
+                        classes: Array.from(new Set(scheduleData.map(s => s.class).filter(Boolean))).sort() as string[],
+                        subjects: Array.from(new Set(scheduleData.map(s => s.subject).filter(Boolean))).sort() as string[],
+                    };
+                }
+            }
 
             // 1. Get Supervisor/Surveillance scope if applicable
             let scope: { type: 'class' | 'subject' | 'all' | 'mixed', values: string[] } | null = null;
@@ -204,6 +224,26 @@ export const useStatistics = () => {
             const { data: alertsData, error: alertsError } = await alertsQuery;
             if (alertsError) throw alertsError;
 
+            // 3.5 Fetch Weekly Comparison (Admin ONLY)
+            let weeklyComparison: WeeklyComparison[] = [];
+            if (isAdmin) {
+                const { data: weeks } = await supabase.from('weeks').select('id, name, start_date').order('start_date', { ascending: false }).limit(6);
+                if (weeks && weeks.length > 0) {
+                    const weekIds = weeks.map(w => w.id);
+                    const { data: weekLogs } = await supabase.from('attendance_logs').select('status, schedules(week_id)').in('schedules.week_id', weekIds);
+                    
+                    weeklyComparison = weeks.reverse().map(w => {
+                        const logsForWeek = (weekLogs || []).filter(l => (l.schedules as any)?.week_id === w.id);
+                        const total = logsForWeek.length;
+                        const present = logsForWeek.filter(l => l.status === 'present' || l.status === 'late').length;
+                        return {
+                            weekName: w.name,
+                            rate: total > 0 ? Math.round((present / total) * 100) : 0
+                        };
+                    });
+                }
+            }
+
             // 4. Process Data
             const baseLogs = logsData || [];
             
@@ -238,38 +278,36 @@ export const useStatistics = () => {
             }
 
             // --- CASCADING OPTIONS LOGIC ---
-            // 1. Initial base unique values
-            const allTeachers = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
-            const allSubjects = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
-            const allClasses = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
-
-            let teachers = allTeachers;
-            let subjects = allSubjects;
-            let classes = allClasses;
+            // Use adminOptions if available, otherwise build from current logs
+            let teachers = adminOptions?.teachers || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+            let subjects = adminOptions?.subjects || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            let classes = adminOptions?.classes || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
 
             // 2. Resolve hierarchical constraints (BI-DIRECTIONAL CASCADNG)
-            // Teachers list based on subject/class
-            if (filters.subject !== 'all' || filters.class !== 'all') {
-                let tLogs = scopeFiltered;
-                if (filters.subject !== 'all') tLogs = tLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
-                if (filters.class !== 'all') tLogs = tLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
-                teachers = Array.from(new Set(tLogs.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
-            }
-            
-            // Subjects list based on teacher/class
-            if (filters.teacher !== 'all' || filters.class !== 'all') {
-                let sLogs = scopeFiltered;
-                if (filters.teacher !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
-                if (filters.class !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
-                subjects = Array.from(new Set(sLogs.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
-            }
+            if (!isAdmin) {
+                // Teachers list based on subject/class
+                if (filters.subject !== 'all' || filters.class !== 'all') {
+                    let tLogs = scopeFiltered;
+                    if (filters.subject !== 'all') tLogs = tLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                    if (filters.class !== 'all') tLogs = tLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                    teachers = Array.from(new Set(tLogs.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+                }
+                
+                // Subjects list based on teacher/class
+                if (filters.teacher !== 'all' || filters.class !== 'all') {
+                    let sLogs = scopeFiltered;
+                    if (filters.teacher !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                    if (filters.class !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                    subjects = Array.from(new Set(sLogs.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+                }
 
-            // Classes list based on teacher/subject
-            if (filters.teacher !== 'all' || filters.subject !== 'all') {
-                let cLogs = scopeFiltered;
-                if (filters.teacher !== 'all') cLogs = cLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
-                if (filters.subject !== 'all') cLogs = cLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
-                classes = Array.from(new Set(cLogs.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
+                // Classes list based on teacher/subject
+                if (filters.teacher !== 'all' || filters.subject !== 'all') {
+                    let cLogs = scopeFiltered;
+                    if (filters.teacher !== 'all') cLogs = cLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                    if (filters.subject !== 'all') cLogs = cLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                    classes = Array.from(new Set(cLogs.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
+                }
             }
 
             // 5. Final Filtering for Dashboard Metrics
@@ -277,10 +315,18 @@ export const useStatistics = () => {
 
             // Apply UI Filters to the logs that will be used for calculations
             if (filters.teacher !== 'all') {
-                filteredLogs = filteredLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                filteredLogs = filteredLogs.filter(l => {
+                    const sched = l.schedules as any;
+                    const tName = sched?.teacher_name || sched?.teacher;
+                    return tName === filters.teacher;
+                });
             }
             if (filters.class !== 'all') {
-                filteredLogs = filteredLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                filteredLogs = filteredLogs.filter(l => {
+                    const sched = l.schedules as any;
+                    const cName = sched?.class_name || sched?.class;
+                    return cName === filters.class;
+                });
             }
             if (filters.subject !== 'all') {
                 filteredLogs = filteredLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
@@ -333,6 +379,7 @@ export const useStatistics = () => {
                 rates,
                 recentAlerts: finalAlerts,
                 dailyTrend,
+                weeklyComparison,
                 byClass,
                 byTeacher,
                 bySubject,

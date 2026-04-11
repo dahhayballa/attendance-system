@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { realtimeService } from '../../../services/supabase/realtime.service';
@@ -16,7 +16,7 @@ import { useToast } from '../../../shared/hooks/useToast';
 export const LiveDashboardPage = () => {
     const { t } = useTranslation();
     const { toast } = useToast();
-    const weekDays = t('common.weekDays', { returnObjects: true }) as string[];
+    const weekDays = useMemo(() => t('common.weekDays', { returnObjects: true }) as string[], [t]);
     
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [weeks, setWeeks] = useState<any[]>([]);
@@ -64,12 +64,12 @@ export const LiveDashboardPage = () => {
         return {};
     }, [selectedDay, selectedWeek, weeks, weekDays]);
 
-    const filters = { 
+    const filters = useMemo(() => ({ 
         day: selectedDay, 
         weekId: selectedWeek, 
         isLive: true, 
         ...getTimeRange() 
-    };
+    }), [selectedDay, selectedWeek, getTimeRange]);
 
     const { refetch } = useGlobalStats(filters);
 
@@ -114,7 +114,7 @@ export const LiveDashboardPage = () => {
         return () => {
             attendSub?.unsubscribe();
         };
-    }, [selectedDay, selectedWeek, refetch, loadData]);
+    }, [refetch, loadData]); // Removed selectedDay/Week as they are covered by loadData/refetch stability
 
     const handleExportCSV = () => {
         if (recentLogs.length === 0) {

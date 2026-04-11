@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useRole } from '../../features/auth/hooks/useRole';
-import { useActiveWeek } from './useActiveWeek';
 
 export interface StatsKPI {
     totalSessions: number;
@@ -56,17 +55,11 @@ export interface FilterState {
     class: string;
 }
 
-export interface WeeklyComparison {
-    weekName: string;
-    rate: number;
-}
-
 export interface StatisticsData {
     kpis: StatsKPI;
     rates: StatsRates;
     recentAlerts: AlertRecord[];
     dailyTrend: DailyTrend[];
-    weeklyComparison: WeeklyComparison[];
     byClass: GroupedStat[];
     byTeacher: GroupedStat[];
     bySubject: GroupedStat[];
@@ -87,10 +80,22 @@ const INITIAL_RATES: StatsRates = { presenceRate: 0, lateRate: 0, absenceRate: 0
 export const useStatistics = () => {
     const { user } = useAuth();
     const { isAdmin, isSupervisor, isSurveillance } = useRole();
-    const { activeWeek } = useActiveWeek();
     
     const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
     const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    
+    // Week navigation: track Monday of the displayed week
+    const getMondayOf = (d: Date) => {
+        const date = new Date(d);
+        const diff = (date.getDay() + 6) % 7;
+        date.setDate(date.getDate() - diff);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+    const [customWeekStart, setCustomWeekStart] = useState<Date>(() => getMondayOf(new Date()));
+    const goToPrevWeek = useCallback(() => setCustomWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; }), []);
+    const goToNextWeek = useCallback(() => setCustomWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; }), []);
+    
     const [filters, setFiltersState] = useState<FilterState>({
         teacher: 'all',
         subject: 'all',
@@ -118,7 +123,6 @@ export const useStatistics = () => {
         rates: INITIAL_RATES,
         recentAlerts: [],
         dailyTrend: [],
-        weeklyComparison: [],
         byClass: [],
         byTeacher: [],
         bySubject: [],
@@ -143,22 +147,9 @@ export const useStatistics = () => {
         try {
             setState(prev => ({ ...prev, loading: true, error: null }));
 
-            // 1. Get filter options for Admin if applicable
-            let adminOptions: FilterOptions | null = null;
-            if (isAdmin) {
-                const { data: scheduleData } = await supabase.from('schedules').select('teacher, class, subject');
-                if (scheduleData) {
-                    adminOptions = {
-                        teachers: Array.from(new Set(scheduleData.map(s => s.teacher).filter(Boolean))).sort() as string[],
-                        classes: Array.from(new Set(scheduleData.map(s => s.class).filter(Boolean))).sort() as string[],
-                        subjects: Array.from(new Set(scheduleData.map(s => s.subject).filter(Boolean))).sort() as string[],
-                    };
-                }
-            }
-
-            // 1. Get Supervisor/Surveillance scope if applicable
+            // 1. Get Supervisor scope if applicable
             let scope: { type: 'class' | 'subject' | 'all' | 'mixed', values: string[] } | null = null;
-            if (isSupervisor || isSurveillance) {
+            if (isSupervisor) {
                 const { data: assignments } = await supabase
                     .from('supervisor_assignments')
                     .select('*')
@@ -172,48 +163,83 @@ export const useStatistics = () => {
                 }
             }
 
-            // 2. Fetch Attendance Logs based on timeframe
-            let startDate = new Date();
-            let endDate = new Date();
-            let daysToProcess = 1;
-            
+            // 2. Determine date range based on timeframe
+            let schedStartDate: Date;
+            let schedEndDate: Date;
+
             if (timeframe === 'day') {
-                startDate = new Date(customDate);
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 1);
-                daysToProcess = 1;
+                schedStartDate = new Date(customDate);
+                schedStartDate.setHours(0, 0, 0, 0);
+                schedEndDate = new Date(schedStartDate);
+                schedEndDate.setDate(schedEndDate.getDate() + 1);
             } else if (timeframe === 'week') {
-                // Current calendar week (Monday -> next Monday), not sliding 7 days.
-                const now = new Date();
-                const mondayOffset = (now.getDay() + 6) % 7; // Monday=0, Sunday=6
-                startDate = new Date(now);
-                startDate.setDate(now.getDate() - mondayOffset);
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 7);
-                daysToProcess = 7;
+                // Use the navigated week (customWeekStart is always the Monday)
+                schedStartDate = new Date(customWeekStart);
+                schedEndDate = new Date(customWeekStart);
+                schedEndDate.setDate(schedEndDate.getDate() + 6);
+                schedEndDate.setHours(23, 59, 59, 999);
             } else {
-                // Current month range.
-                const now = new Date();
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-                daysToProcess = Math.max(28, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
+                // Month: last 30 days
+                schedEndDate = new Date();
+                schedEndDate.setHours(23, 59, 59, 999);
+                schedStartDate = new Date();
+                schedStartDate.setDate(schedStartDate.getDate() - 30);
+                schedStartDate.setHours(0, 0, 0, 0);
             }
-            
+
+            // 3. Fetch schedules filtered by created_at date range
+            let schedQuery = supabase.from('schedules').select(`
+                id, day, teacher_name, class_name, subject, teacher, class, pointer, created_at
+            `)
+                .gte('created_at', schedStartDate.toISOString())
+                .lte('created_at', schedEndDate.toISOString());
+
+            if (timeframe === 'day') {
+                const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                const selectedDay = daysFr[new Date(customDate).getDay()];
+                schedQuery = schedQuery.eq('day', selectedDay);
+            }
+
+            const { data: schedulesData } = await schedQuery;
+
+            // 4. Fetch Attendance Logs for the same date range
+            const startDate = schedStartDate;
+            const endDate = schedEndDate;
+            let daysToProcess = timeframe === 'month' ? 30 : 7;
+
             let logsQuery = supabase.from('attendance_logs').select(`
-                id, status, recorded_at, points, late_minutes,
-                schedules (
-                    id, week_id, pointer, teacher_name, class_name, subject, teacher, class
-                )
+                id, status, recorded_at, points, late_minutes, schedule_id
             `).gte('recorded_at', startDate.toISOString())
               .lt('recorded_at', endDate.toISOString());
+
+            const { data: rawLogsData } = await logsQuery;
+            
+            // 3. Merge! Get the latest log per schedule in this timeframe
+            const latestLogMap = new Map<string, any>();
+            for (const log of (rawLogsData || [])) {
+                const existing = latestLogMap.get(log.schedule_id);
+                if (!existing || new Date(log.recorded_at) > new Date(existing.recorded_at)) {
+                    latestLogMap.set(log.schedule_id, log);
+                }
+            }
+
+            // 4. Construct final data array combining schedules with actual log outcomes
+            const logsData = (schedulesData || []).map(sched => {
+                const log = latestLogMap.get(sched.id);
+                return {
+                    id: log ? log.id : sched.id,
+                    status: log ? log.status : 'pending',
+                    recorded_at: log ? log.recorded_at : null,
+                    points: log ? log.points : 0,
+                    late_minutes: log ? log.late_minutes : 0,
+                    // Nested schedules object for compatibility with downstream
+                    schedules: sched 
+                };
+            });
 
             // 2.1 Fetch Notifications (to count them)
             const { data: notifData } = await supabase.from('notifications').select('id, read');
             
-            const { data: logsData, error: logsError } = await logsQuery;
-            if (logsError) throw logsError;
 
             // 3. Fetch Alerts
             let alertsQuery = supabase.from('alerts')
@@ -224,43 +250,16 @@ export const useStatistics = () => {
             const { data: alertsData, error: alertsError } = await alertsQuery;
             if (alertsError) throw alertsError;
 
-            // 3.5 Fetch Weekly Comparison (Admin ONLY)
-            let weeklyComparison: WeeklyComparison[] = [];
-            if (isAdmin) {
-                const { data: weeks } = await supabase.from('weeks').select('id, name, start_date').order('start_date', { ascending: false }).limit(6);
-                if (weeks && weeks.length > 0) {
-                    const weekIds = weeks.map(w => w.id);
-                    const { data: weekLogs } = await supabase.from('attendance_logs').select('status, schedules(week_id)').in('schedules.week_id', weekIds);
-                    
-                    weeklyComparison = weeks.reverse().map(w => {
-                        const logsForWeek = (weekLogs || []).filter(l => (l.schedules as any)?.week_id === w.id);
-                        const total = logsForWeek.length;
-                        const present = logsForWeek.filter(l => l.status === 'present' || l.status === 'late').length;
-                        return {
-                            weekName: w.name,
-                            rate: total > 0 ? Math.round((present / total) * 100) : 0
-                        };
-                    });
-                }
-            }
-
             // 4. Process Data
             const baseLogs = logsData || [];
             
-            // Extract options for filters (from all logs in timeframe, scoped by role if applicable)
+            // Extract options for filters (from all logs in timeframe, scoped by supervisor if applicable)
             let scopeFiltered = baseLogs.map(log => ({
                 ...log,
                 schedules: Array.isArray(log.schedules) ? log.schedules[0] : log.schedules
             }));
 
-            if (activeWeek?.id) {
-                scopeFiltered = scopeFiltered.filter(log => {
-                    const sched = log.schedules as any;
-                    return sched?.week_id === activeWeek.id;
-                });
-            }
-
-            if ((isSupervisor || isSurveillance) && scope) {
+            if (isSupervisor && scope) {
                 scopeFiltered = scopeFiltered.filter(log => {
                     const sched = log.schedules as any;
                     if (!sched) return false;
@@ -268,46 +267,41 @@ export const useStatistics = () => {
                     const sName = sched.subject;
                     return scope!.values.includes(cName) || scope!.values.includes(sName);
                 });
-            } else if ((isSupervisor || isSurveillance) && user?.name) {
-                // Fallback for users without explicit assignments: scope by pointer name.
-                const userName = user.name.trim().toLowerCase();
-                scopeFiltered = scopeFiltered.filter(log => {
-                    const sched = log.schedules as any;
-                    return (sched?.pointer || '').toString().trim().toLowerCase() === userName;
-                });
             }
 
             // --- CASCADING OPTIONS LOGIC ---
-            // Use adminOptions if available, otherwise build from current logs
-            let teachers = adminOptions?.teachers || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
-            let subjects = adminOptions?.subjects || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
-            let classes = adminOptions?.classes || Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
+            // 1. Initial base unique values
+            const allTeachers = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+            const allSubjects = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            const allClasses = Array.from(new Set(scopeFiltered.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
+
+            let teachers = allTeachers;
+            let subjects = allSubjects;
+            let classes = allClasses;
 
             // 2. Resolve hierarchical constraints (BI-DIRECTIONAL CASCADNG)
-            if (!isAdmin) {
-                // Teachers list based on subject/class
-                if (filters.subject !== 'all' || filters.class !== 'all') {
-                    let tLogs = scopeFiltered;
-                    if (filters.subject !== 'all') tLogs = tLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
-                    if (filters.class !== 'all') tLogs = tLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
-                    teachers = Array.from(new Set(tLogs.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
-                }
-                
-                // Subjects list based on teacher/class
-                if (filters.teacher !== 'all' || filters.class !== 'all') {
-                    let sLogs = scopeFiltered;
-                    if (filters.teacher !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
-                    if (filters.class !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
-                    subjects = Array.from(new Set(sLogs.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
-                }
+            // Teachers list based on subject/class
+            if (filters.subject !== 'all' || filters.class !== 'all') {
+                let tLogs = scopeFiltered;
+                if (filters.subject !== 'all') tLogs = tLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                if (filters.class !== 'all') tLogs = tLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                teachers = Array.from(new Set(tLogs.map(l => (l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher))).filter(Boolean).sort() as string[];
+            }
+            
+            // Subjects list based on teacher/class
+            if (filters.teacher !== 'all' || filters.class !== 'all') {
+                let sLogs = scopeFiltered;
+                if (filters.teacher !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                if (filters.class !== 'all') sLogs = sLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
+                subjects = Array.from(new Set(sLogs.map(l => (l.schedules as any)?.subject))).filter(Boolean).sort() as string[];
+            }
 
-                // Classes list based on teacher/subject
-                if (filters.teacher !== 'all' || filters.subject !== 'all') {
-                    let cLogs = scopeFiltered;
-                    if (filters.teacher !== 'all') cLogs = cLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
-                    if (filters.subject !== 'all') cLogs = cLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
-                    classes = Array.from(new Set(cLogs.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
-                }
+            // Classes list based on teacher/subject
+            if (filters.teacher !== 'all' || filters.subject !== 'all') {
+                let cLogs = scopeFiltered;
+                if (filters.teacher !== 'all') cLogs = cLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
+                if (filters.subject !== 'all') cLogs = cLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
+                classes = Array.from(new Set(cLogs.map(l => (l.schedules as any)?.class_name || (l.schedules as any)?.class))).filter(Boolean).sort() as string[];
             }
 
             // 5. Final Filtering for Dashboard Metrics
@@ -315,18 +309,10 @@ export const useStatistics = () => {
 
             // Apply UI Filters to the logs that will be used for calculations
             if (filters.teacher !== 'all') {
-                filteredLogs = filteredLogs.filter(l => {
-                    const sched = l.schedules as any;
-                    const tName = sched?.teacher_name || sched?.teacher;
-                    return tName === filters.teacher;
-                });
+                filteredLogs = filteredLogs.filter(l => ((l.schedules as any)?.teacher_name || (l.schedules as any)?.teacher) === filters.teacher);
             }
             if (filters.class !== 'all') {
-                filteredLogs = filteredLogs.filter(l => {
-                    const sched = l.schedules as any;
-                    const cName = sched?.class_name || sched?.class;
-                    return cName === filters.class;
-                });
+                filteredLogs = filteredLogs.filter(l => ((l.schedules as any)?.class_name || (l.schedules as any)?.class) === filters.class);
             }
             if (filters.subject !== 'all') {
                 filteredLogs = filteredLogs.filter(l => (l.schedules as any)?.subject === filters.subject);
@@ -379,7 +365,6 @@ export const useStatistics = () => {
                 rates,
                 recentAlerts: finalAlerts,
                 dailyTrend,
-                weeklyComparison,
                 byClass,
                 byTeacher,
                 bySubject,
@@ -398,13 +383,13 @@ export const useStatistics = () => {
             console.error('[useStatistics] Error:', err);
             setState(prev => ({ ...prev, loading: false, error: err.message || 'Error loading statistics' }));
         }
-    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, customDate, filters, activeWeek?.id]);
+    }, [user, isSupervisor, isAdmin, isSurveillance, timeframe, customDate, customWeekStart, filters]);
 
     useEffect(() => {
         fetchStatistics();
     }, [fetchStatistics]);
 
-    return { ...state, timeframe, setTimeframe, customDate, setCustomDate, filters, setFilters, refetch: fetchStatistics };
+    return { ...state, timeframe, setTimeframe, customDate, setCustomDate, customWeekStart, goToPrevWeek, goToNextWeek, getMondayOf, filters, setFilters, refetch: fetchStatistics };
 };
 
 /**

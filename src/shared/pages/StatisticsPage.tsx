@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { useStatistics as useStatsHook, GroupedStat } from '../hooks/useStatistics';
-import { useRole } from '../../features/auth/hooks/useRole';
+// import { useRole } from '../../features/auth/hooks/useRole';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
@@ -12,6 +12,7 @@ import {
     TrendingUp, 
     GraduationCap, 
     UserCheck, 
+    ChevronLeft,
     ChevronRight, 
     BookOpen, 
     Info, 
@@ -35,8 +36,9 @@ type ViewType = 'overview' | 'classes' | 'teachers' | 'subjects';
  * Incorporates informative tooltips for each statistic.
  */
 export const StatisticsPage = () => {
-    const { kpis, rates, recentAlerts, byClass, byTeacher, bySubject, dailyTrend, timeframe, setTimeframe, customDate, setCustomDate, loading, error, refetch, options, filters, setFilters, weeklyComparison } = useStatsHook();
-    const { isAdmin, role } = useRole();
+    const { kpis, rates, recentAlerts, byClass, byTeacher, bySubject, dailyTrend, timeframe, setTimeframe, customDate, setCustomDate, customWeekStart, goToPrevWeek, goToNextWeek, loading, error, refetch, options, filters, setFilters } = useStatsHook();
+    // const { role } = useRole();
+
     const { t, i18n } = useTranslation();
     const [activeView, setActiveView] = useState<ViewType>('overview');
     const [showFilters, setShowFilters] = useState(false);
@@ -118,7 +120,7 @@ export const StatisticsPage = () => {
                         <h1 className="text-2xl font-black text-gray-950 tracking-tight flex items-center gap-2">
                              {t('supervisor.statisticsPage.title')} {activeView !== 'overview' && <><ChevronRight className="text-gray-300" /> {activeView === 'classes' ? t('supervisor.statisticsPage.tabs.classes') : activeView === 'teachers' ? t('supervisor.statisticsPage.tabs.teachers') : t('supervisor.statisticsPage.tabs.subjects')}</>}
                         </h1>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{t('supervisor.statisticsPage.subtitle')} ({role})</p>
+                        {/* <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{t('supervisor.statisticsPage.subtitle')} ({role})</p> */}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start sm:justify-end w-full sm:w-auto">
                         <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 flex-shrink-0">
@@ -172,6 +174,38 @@ export const StatisticsPage = () => {
                                     <Calendar size={14} className="text-gray-400 group-hover:text-black" />
                                     <span className="text-[10px] font-black text-gray-950">{new Date(customDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
                                 </div>
+                            </div>
+                        )}
+                        {timeframe === 'week' && (
+                            <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl shadow-sm px-1 py-1">
+                                <button
+                                    onClick={goToPrevWeek}
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-black transition-all"
+                                    title="Semaine précédente"
+                                >
+                                    <ChevronLeft size={13} />
+                                </button>
+                                <span className="text-[10px] font-black text-gray-950 px-1 min-w-[110px] text-center">
+                                    {(() => {
+                                        const start = new Date(customWeekStart);
+                                        const end = new Date(customWeekStart);
+                                        end.setDate(end.getDate() + 6);
+                                        const sDay = start.getDate();
+                                        const eDay = end.getDate();
+                                        const sMonth = start.toLocaleString('fr-FR', { month: 'short' });
+                                        const eMonth = end.toLocaleString('fr-FR', { month: 'short' });
+                                        return sMonth === eMonth
+                                            ? `${sDay} - ${eDay} ${sMonth}.`
+                                            : `${sDay} ${sMonth}. - ${eDay} ${eMonth}.`;
+                                    })()}
+                                </span>
+                                <button
+                                    onClick={goToNextWeek}
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-black transition-all"
+                                    title="Semaine suivante"
+                                >
+                                    <ChevronRight size={13} />
+                                </button>
                             </div>
                         )}
                         <button 
@@ -327,39 +361,6 @@ export const StatisticsPage = () => {
                                 </div>
                             </Card>
 
-                            {/* Weekly Comparison Chart (Admin Only) */}
-                            {isAdmin && (
-                                <Card className="border-gray-100 flex flex-col justify-between" padding="p-8">
-                                    <div className="flex justify-between items-start mb-8">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">Comparaison Semaine par Semaine</h3>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Taux de présence (%)</p>
-                                        </div>
-                                    </div>
-                                    <div className="h-64 mt-4">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={weeklyComparison}>
-                                                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
-                                                <XAxis 
-                                                    dataKey="weekName" 
-                                                    axisLine={false} 
-                                                    tickLine={false} 
-                                                    tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 700 }} 
-                                                />
-                                                <YAxis domain={[0, 100]} hide />
-                                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                                <Bar 
-                                                    dataKey="rate" 
-                                                    fill="#0f172a" 
-                                                    radius={[6, 6, 0, 0]} 
-                                                    barSize={30}
-                                                    name="Taux de présence"
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </Card>
-                            )}
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

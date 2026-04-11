@@ -193,15 +193,8 @@ export const adminService = {
       
       if (countErr) throw countErr;
 
-      // Recorded sessions (logs) in this week
-      // We need to count unique logs per schedule_id for this week
-      const { data: logs, error: logsErr } = await supabase
-        .from('attendance_logs')
-        .select('schedule_id')
-        .filter('schedule.week_id', 'eq', week.id); // This might need a proper join or filtering
-      
-      // Since filtering on joined tables in Supabase JS client for count is tricky, 
-      // let's try a different approach:
+      // 2. For each week, get counts
+      // We'll do this by first getting all schedule IDs for this week
       const { data: schedIdsData } = await supabase.from('schedules').select('id').eq('week_id', week.id);
       const scheduleIds = (schedIdsData || []).map(s => s.id);
       
@@ -256,7 +249,7 @@ export const adminService = {
   },
 
   // 3.ب تعيين الأسبوع النشط
-  setActiveWeek: async (weekId: string) => {
+  setActiveWeek: async (_weekId: string) => {
     // Note: is_active column is missing from DB. This is a placeholder.
     console.warn('setActiveWeek: is_active column missing in DB');
     return true;

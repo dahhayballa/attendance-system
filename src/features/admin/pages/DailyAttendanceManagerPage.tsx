@@ -18,7 +18,12 @@ export const DailyAttendanceManagerPage = () => {
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [currentTime, setCurrentTime] = useState(new Date());
+
+    const daysDb = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+    const currentDayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+    const [selectedDayDb, setSelectedDayDb] = useState(daysDb[currentDayIndex]);
 
     const [modalState, setModalState] = useState<{
         scheduleId: string | null;
@@ -27,21 +32,10 @@ export const DailyAttendanceManagerPage = () => {
 
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const getTodayName = () => {
-        const day = new Date().getDay();
-        const index = day === 0 ? 6 : day - 1;
-        return weekDays[index];
-    };
-
-    const loadTodaySchedules = async () => {
+    const loadSchedules = async () => {
         try {
             setLoading(true);
-            const daysDb = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-            const day = new Date().getDay();
-            const index = day === 0 ? 6 : day - 1;
-            const todayDb = daysDb[index];
-            
-            const data = await getSchedules({ day: todayDb });
+            const data = await getSchedules({ day: selectedDayDb });
             setSchedules(data || []);
         } catch (error) {
             console.error('Failed to load schedules:', error);
@@ -52,11 +46,11 @@ export const DailyAttendanceManagerPage = () => {
     };
 
     useEffect(() => {
-        loadTodaySchedules();
+        loadSchedules();
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [selectedDayDb]);
 
     const handleStatusChange = async (status: 'present' | 'absent' | 'late') => {
         if (!modalState.scheduleId || !user) return;
@@ -83,11 +77,18 @@ export const DailyAttendanceManagerPage = () => {
         }
     };
 
-    const filteredSchedules = schedules.filter(s => 
-        s.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        s.subject?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        s.class?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredSchedules = schedules.filter(s => {
+        const matchesSearch = s.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              s.subject?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              s.class?.toLowerCase().includes(searchQuery.toLowerCase());
+                              
+        const isAutoAbsent = s.status === 'absent' && !s.recorded_by;
+        const mappedStatus = (!s.status || s.status === 'pending' || isAutoAbsent) ? 'pending' : s.status;
+        
+        const matchesStatus = statusFilter === 'all' || mappedStatus === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+    });
 
     return (
         <Layout>
@@ -102,15 +103,15 @@ export const DailyAttendanceManagerPage = () => {
                             <h2 className="text-xl font-black text-gray-950 tracking-tight">
                                 {t('admin.daily.pageTitle')}
                             </h2>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{t('admin.daily.pageSubtitle')} ({getTodayName()})</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{t('admin.daily.pageSubtitle')} ({weekDays[daysDb.indexOf(selectedDayDb)] || selectedDayDb})</p>
                         </div>
                     </div>
                 </div>
 
                 <Card className="shadow-sm border-gray-100 p-0 overflow-hidden rounded-3xl">
                     <div className="p-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                            <div className="relative w-full md:w-96">
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <div className="relative w-full md:w-64">
                                 <Search className="absolute ltr:left-3 rtl:right-3 top-2 text-gray-400" size={13} />
                                 <input
                                     type="text"
@@ -120,8 +121,30 @@ export const DailyAttendanceManagerPage = () => {
                                     className="w-full ltr:pl-8 ltr:pr-4 rtl:pr-8 rtl:pl-4 py-1.5 border border-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-gray-200 focus:border-gray-400 transition-all"
                                 />
                             </div>
+                            
+                            <select
+                                value={statusFilter}
+                                onChange={e => setStatusFilter(e.target.value)}
+                                className="w-full md:w-auto py-1.5 px-3 border border-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-gray-200 focus:border-gray-400 transition-all bg-white"
+                            >
+                                <option value="all">{t('admin.daily.allStatuses')}</option>
+                                <option value="pending">{t('admin.daily.statusPending')}</option>
+                                <option value="present">{t('admin.daily.btnPresent')}</option>
+                                <option value="absent">{t('admin.daily.btnAbsent')}</option>
+                                <option value="late">{t('admin.daily.btnLate')}</option>
+                            </select>
+                            
+                            <select
+                                value={selectedDayDb}
+                                onChange={e => setSelectedDayDb(e.target.value)}
+                                className="w-full md:w-auto py-1.5 px-3 border border-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-gray-200 focus:border-gray-400 transition-all bg-white"
+                            >
+                                {daysDb.map((day, idx) => (
+                                    <option key={day} value={day}>{weekDays[idx] || day}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
                             {filteredSchedules.length} {t('admin.liveDashboard.statSessions')}
                         </div>
                     </div>

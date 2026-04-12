@@ -434,6 +434,7 @@ const resources = {
           loadError: 'خطأ في التحميل',
           importBtnLabel: 'تأكيد والاستيراد',
           importingLabel: 'جاري الاستيراد...',
+          allStatuses: 'جميع الحالات',
         },
         dashboard: {
           title: 'لوحة تحكم المدير',
@@ -1044,7 +1045,7 @@ const resources = {
           logs: 'Journal d\'audit',
           statistics: 'Statistiques',
           weeks: 'Semaines',
-          daily: 'Correction journalière',
+          daily: 'Gestion Quotidienne',
         },
         daily: {
           pageTitle: 'Gestion journalière',
@@ -1076,6 +1077,7 @@ const resources = {
           loadError: 'Erreur de chargement',
           importBtnLabel: 'Confirmer et Importer',
           importingLabel: 'Importation en cours...',
+          allStatuses: 'Tous les statuts',
         },
         dashboard: {
           title: 'Tableau de bord administrateur',

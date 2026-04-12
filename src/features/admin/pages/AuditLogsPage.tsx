@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect } from 'react';
 import { Layout } from '../../../shared/components/layout/Layout';
 import { adminService } from '../../../services/supabase/admin.service';
 import { usersService } from '../../../services/supabase/users.service';
@@ -12,7 +11,6 @@ import Loading from '../../../shared/components/ui/Loading';
 import * as XLSX from 'xlsx';
 
 export const AuditLogsPage = () => {
-    const { t } = useTranslation();
     const { toast } = useToast();
     const [logs, setLogs] = useState<any[]>([]);
     const [supervisors, setSupervisors] = useState<any[]>([]);

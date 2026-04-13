@@ -30,7 +30,8 @@ export const recordAttendance = async (
     scheduleId: string,
     status: Attendance['status'],
     userId: string,
-    notes?: string
+    notes?: string,
+    sessionDate?: string
 ): Promise<Attendance> => {
     const { data, error } = await supabase
         .from('attendance_logs')
@@ -40,6 +41,7 @@ export const recordAttendance = async (
             status,
             reason: notes ?? null,
             recorded_at: new Date().toISOString(),
+            session_date: sessionDate ?? new Date().toISOString().split('T')[0],
         }])
         .select()
         .single();

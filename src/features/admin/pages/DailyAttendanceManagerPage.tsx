@@ -52,16 +52,35 @@ export const DailyAttendanceManagerPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDayDb]);
 
+    const getTargetDateFromDay = (dayName: string) => {
+        const daysMap: Record<string, number> = { 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 'Jeudi': 4, 'Vendredi': 5, 'Samedi': 6, 'Dimanche': 0 };
+        const targetDay = daysMap[dayName];
+        if (targetDay === undefined) return new Date().toISOString().split('T')[0];
+        
+        const now = new Date();
+        const currentDay = now.getDay();
+        
+        const currentDayAdjusted = currentDay === 0 ? 7 : currentDay;
+        const targetDayAdjusted = targetDay === 0 ? 7 : targetDay;
+        
+        const diff = targetDayAdjusted - currentDayAdjusted;
+        const targetDate = new Date(now);
+        targetDate.setDate(now.getDate() + diff);
+        return targetDate.toISOString().split('T')[0];
+    };
+
     const handleStatusChange = async (status: 'present' | 'absent' | 'late') => {
         if (!modalState.scheduleId || !user) return;
         const targetId = modalState.scheduleId;
         try {
             setIsUpdating(true);
+            const sessionDate = getTargetDateFromDay(selectedDayDb);
             await recordAttendance(
                 targetId,
                 status,
                 user.id,
-                `Correction Administrateur (${status})`
+                `Correction Administrateur (${status})`,
+                sessionDate
             );
             
             // Local UI update instantly

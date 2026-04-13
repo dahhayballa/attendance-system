@@ -165,14 +165,24 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
     const [] = (session.time_end   || '00:00').split(':').map(Number);
     const startMins = sh * 60 + sm;
 
-    // 20 min après le début = seuil retard
-    const lateThreshold = startMins + 20;
+    // Seuil de retard : 40 min pour les cours de 8h, 20 min pour les autres
+    let thresholdMinutes = 20;
+    if (sh === 8) {
+        thresholdMinutes = 40;
+    } else {
+        thresholdMinutes = 20;
+    }
+    const lateThreshold = startMins + thresholdMinutes;
     const isAfterLateThreshold = currentMins >= lateThreshold;
 
-    // ── Si déjà enregistré par humain → afficher le statut + bouton Modifier ──
     if (isRecordedByHuman) {
         const isPresent = session.status === 'present';
         const isLateRec = session.status === 'late';
+        // Autoriser la modification pendant seulement 5 minutes
+        const recordedTime = session.recorded_at ? new Date(session.recorded_at).getTime() : 0;
+        const nowMs = currentTime.getTime();
+        const diffMinutes = (nowMs - recordedTime) / (1000 * 60);
+        const canEdit = diffMinutes <= 5;
 
         return (
             <div className="flex items-center gap-1.5">
@@ -189,7 +199,8 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                 : t('supervisor.currentSessionCard.absent', 'Absent')}
                 </span>
 
-                {/* Bouton Modifier — toujours visible pendant la session */}
+                {/* Bouton Modifier — visible seulement pendant 5 minutes après enregistrement */}
+                {canEdit && (
                 <button
                     onClick={() => {
                         // Proposer l'inverse du statut actuel
@@ -209,6 +220,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                     <RefreshCw size={13} />
                     <span>{t('supervisor.currentSessionCard.edit', 'Modifier')}</span>
                 </button>
+                )}
             </div>
         );
     }

@@ -239,6 +239,33 @@ export const adminService = {
 
   // 3. حذف أسبوع وكل ما يتعلق به (Cascade Delete)
   deleteWeek: async (weekId: string) => {
+    // 1. Get all schedules for this week
+    const { data: schedules } = await supabase
+      .from('schedules')
+      .select('id')
+      .eq('week_id', weekId);
+
+    if (schedules && schedules.length > 0) {
+      const scheduleIds = schedules.map(s => s.id);
+      
+      // 2. Delete attendance logs for these schedules in chunks to avoid URL length limits
+      const chunkSize = 200;
+      for (let i = 0; i < scheduleIds.length; i += chunkSize) {
+        const chunk = scheduleIds.slice(i, i + chunkSize);
+        await supabase
+          .from('attendance_logs')
+          .delete()
+          .in('schedule_id', chunk);
+      }
+
+      // 3. Delete schedules
+      await supabase
+        .from('schedules')
+        .delete()
+        .eq('week_id', weekId);
+    }
+
+    // 4. Finally delete the week
     const { error } = await supabase
       .from('weeks')
       .delete()

@@ -159,6 +159,7 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
                     recorded_by: user.id,
                     status,
                     recorded_at: new Date().toISOString(),
+                    session_date: new Date().toISOString().split('T')[0],
                 }]);
             }
 
@@ -200,6 +201,7 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
                 recorded_by: user.id,
                 status,
                 recorded_at: new Date().toISOString(),
+                session_date: new Date().toISOString().split('T')[0],
             }));
             await supabase.from('attendance_logs').insert(logs);
 

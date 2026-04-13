@@ -50,9 +50,16 @@ BEGIN
             recorded_at = now()
         WHERE id = schedule_rec.id;
 
-        -- b) Créer le journal explicatif dans attendance_logs -> 'absent'
-        INSERT INTO public.attendance_logs (schedule_id, recorded_by, status, recorded_at, reason)
-        VALUES (schedule_rec.id, NULL, 'absent', now(), 'Absence marquée automatiquement (séance terminée sans pointage)');
+        -- b) Créer le journal explicatif dans attendance_logs -> 'absent' avec la vraie date
+        INSERT INTO public.attendance_logs (schedule_id, recorded_by, status, recorded_at, session_date, reason)
+        VALUES (
+            schedule_rec.id, 
+            NULL, 
+            'absent', 
+            now(), 
+            current_date,
+            'Absence marquée automatiquement (séance terminée sans pointage)'
+        );
     END LOOP;
 END;
 $$;
@@ -65,9 +72,9 @@ EXCEPTION WHEN others THEN
   -- Ignore l'erreur lors de la première création
 END $$;
 
--- 5. Planifier l'exécution de la fonction toutes les 5 minutes
+-- 5. Planifier l'exécution de la fonction TOUTES LES MINUTES
 SELECT cron.schedule(
     'auto-absent-job',
-    '*/5 * * * *', 
+    '* * * * *', 
     'SELECT public.mark_ended_sessions_absent();'
 );

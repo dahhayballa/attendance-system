@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useRole } from '../../features/auth/hooks/useRole';
+import { adminService } from '../../services/supabase/admin.service';
 
 export interface StatsKPI {
     totalSessions: number;
@@ -163,83 +164,67 @@ export const useStatistics = () => {
                 }
             }
 
-            // 2. Determine date range based on timeframe
-            let schedStartDate: Date;
-            let schedEndDate: Date;
+            // 2. Resolve timeframe and relevant IDs
+            let startDate: Date;
+            let endDate: Date;
+            let weekIdForStats = 'all';
+            let daysToProcess = 7;
 
             if (timeframe === 'day') {
-                schedStartDate = new Date(customDate);
-                schedStartDate.setHours(0, 0, 0, 0);
-                schedEndDate = new Date(schedStartDate);
-                schedEndDate.setDate(schedEndDate.getDate() + 1);
+                startDate = new Date(customDate);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 1);
+                daysToProcess = 1;
             } else if (timeframe === 'week') {
-                // Use the navigated week (customWeekStart is always the Monday)
-                schedStartDate = new Date(customWeekStart);
-                schedEndDate = new Date(customWeekStart);
-                schedEndDate.setDate(schedEndDate.getDate() + 6);
-                schedEndDate.setHours(23, 59, 59, 999);
+                startDate = new Date(customWeekStart);
+                endDate = new Date(customWeekStart);
+                endDate.setDate(endDate.getDate() + 7);
+                daysToProcess = 7;
+
+                // Find matching week ID for global stats call
+                const { data: weekData } = await supabase.from('weeks')
+                    .select('id')
+                    .eq('start_date', startDate.toISOString().split('T')[0])
+                    .limit(1)
+                    .maybeSingle();
+                if (weekData) weekIdForStats = weekData.id;
             } else {
                 // Month: last 30 days
-                schedEndDate = new Date();
-                schedEndDate.setHours(23, 59, 59, 999);
-                schedStartDate = new Date();
-                schedStartDate.setDate(schedStartDate.getDate() - 30);
-                schedStartDate.setHours(0, 0, 0, 0);
+                endDate = new Date();
+                endDate.setHours(23, 59, 59, 999);
+                startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                startDate.setHours(0, 0, 0, 0);
+                daysToProcess = 30;
             }
 
-            // 3. Fetch schedules filtered by created_at date range
-            let schedQuery = supabase.from('schedules').select(`
-                id, day, teacher_name, class_name, subject, teacher, class, pointer, created_at
-            `)
-                .gte('created_at', schedStartDate.toISOString())
-                .lte('created_at', schedEndDate.toISOString());
+            // 3. Get master KPIs from adminService (Gold Standard for consistency)
+            const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            const globalStats = await adminService.getGlobalStats({
+                day: timeframe === 'day' ? daysFr[new Date(customDate).getDay()] : 'all',
+                weekId: weekIdForStats,
+                teacher: filters.teacher,
+                className: filters.class,
+                subject: filters.subject,
+                exactDateStart: startDate.toISOString(),
+                exactDateEnd: endDate.toISOString(),
+                isLive: true // Explicitly scan logs instead of only counting schedule.status
+            });
 
-            if (timeframe === 'day') {
-                const daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-                const selectedDay = daysFr[new Date(customDate).getDay()];
-                schedQuery = schedQuery.eq('day', selectedDay);
-            }
-
-            const { data: schedulesData } = await schedQuery;
-
-            // 4. Fetch Attendance Logs for the same date range
-            const startDate = schedStartDate;
-            const endDate = schedEndDate;
-            let daysToProcess = timeframe === 'month' ? 30 : 7;
-
+            // 4. Fetch Attendance Logs for historical charts and details
             let logsQuery = supabase.from('attendance_logs').select(`
-                id, status, recorded_at, points, late_minutes, schedule_id
+                id, status, recorded_at, points, late_minutes,
+                schedules:schedules!attendance_logs_schedule_id_fkey (
+                    id, teacher_name, class_name, subject, teacher, class
+                )
             `).gte('recorded_at', startDate.toISOString())
               .lt('recorded_at', endDate.toISOString());
 
-            const { data: rawLogsData } = await logsQuery;
-            
-            // 3. Merge! Get the latest log per schedule in this timeframe
-            const latestLogMap = new Map<string, any>();
-            for (const log of (rawLogsData || [])) {
-                const existing = latestLogMap.get(log.schedule_id);
-                if (!existing || new Date(log.recorded_at) > new Date(existing.recorded_at)) {
-                    latestLogMap.set(log.schedule_id, log);
-                }
-            }
-
-            // 4. Construct final data array combining schedules with actual log outcomes
-            const logsData = (schedulesData || []).map(sched => {
-                const log = latestLogMap.get(sched.id);
-                return {
-                    id: log ? log.id : sched.id,
-                    status: log ? log.status : 'pending',
-                    recorded_at: log ? log.recorded_at : null,
-                    points: log ? log.points : 0,
-                    late_minutes: log ? log.late_minutes : 0,
-                    // Nested schedules object for compatibility with downstream
-                    schedules: sched 
-                };
-            });
-
-            // 2.1 Fetch Notifications (to count them)
             const { data: notifData } = await supabase.from('notifications').select('id, read');
             
+            const { data: logsData, error: logsError } = await logsQuery;
+            if (logsError) throw logsError;
 
             // 3. Fetch Alerts
             let alertsQuery = supabase.from('alerts')
@@ -319,28 +304,20 @@ export const useStatistics = () => {
             }
 
             // Advanced metrics calculations
-            const total = filteredLogs.length;
-            const onTime = filteredLogs.filter(l => l.status === 'present').length;
-            const late = filteredLogs.filter(l => l.status === 'late').length;
-            const absent = filteredLogs.filter(l => l.status === 'absent' || l.status === 'absent_justified').length;
-            
-            const totalPresence = onTime + late;
-
-            const criticalAlerts = (alertsData || []).filter(a => a.severity === 'critical').length;
-
+            // Use globalStats for KPIs (expected total vs actual recorded)
             const kpis: StatsKPI = {
-                totalSessions: total,
-                totalPresence: totalPresence,
-                onTime: onTime,
-                late: late,
-                absent: absent,
-                totalCriticalAlerts: criticalAlerts
+                totalSessions: globalStats.total,
+                totalPresence: globalStats.present + globalStats.late,
+                onTime: globalStats.present,
+                late: globalStats.late,
+                absent: globalStats.absent,
+                totalCriticalAlerts: (alertsData || []).filter(a => a.severity === 'critical').length
             };
 
             const rates: StatsRates = {
-                presenceRate: total > 0 ? Math.round((totalPresence / total) * 100) : 0,
-                lateRate: total > 0 ? Math.round((late / total) * 100) : 0,
-                absenceRate: total > 0 ? Math.round((absent / total) * 100) : 0,
+                presenceRate: globalStats.rate,
+                lateRate: globalStats.total > 0 ? Math.round((globalStats.late / globalStats.total) * 100) : 0,
+                absenceRate: globalStats.total > 0 ? Math.round((globalStats.absent / globalStats.total) * 100) : 0,
             };
 
             const advNotificationCount = notifData?.length || 0;

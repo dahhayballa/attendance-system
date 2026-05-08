@@ -4,7 +4,7 @@ import { adminService } from '../../../services/supabase/admin.service';
 import { useToast } from '../../../shared/hooks/useToast';
 import { 
     Users, TrendingUp, Calendar, ArrowRight, 
-    Activity, Shield, FileText, ChevronRight 
+    Activity, Shield, FileText, ChevronRight, ClipboardEdit
 } from 'lucide-react';
 import { StatsWidget } from '../components/StatsWidget';
 import { Layout } from '../../../shared/components/layout/Layout';
@@ -121,6 +121,13 @@ export const AdminDashboard: React.FC = () => {
              label={t('admin.sidebar.reports')} 
              description={t('admin.dashboard.quickReportsDesc', 'Historique complet et exports Excel')}
              color="bg-purple-50 text-purple-600"
+           />
+           <QuickActionBtn 
+             to="/admin/schedule" 
+             icon={<ClipboardEdit size={24} />} 
+             label="Emploi du temps"
+             description="Modifier, annuler ou suspendre des séances"
+             color="bg-teal-50 text-teal-600"
            />
         </div>
 

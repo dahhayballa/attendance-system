@@ -15,14 +15,26 @@ export interface Schedule {
     subject: string;
     class: string;
     room?: string | null;
-    status: 'pending' | 'present' | 'absent';
+    status: 'pending' | 'present' | 'absent' | 'late' | 'cancelled';
     recorded_by?: string | null;
     recorded_at?: string | null;
+    // Cancellation fields (added via SQL migration)
+    cancellation_reason?: string | null;
+    cancelled_by?: string | null;
+    cancelled_at?: string | null;
     recorded_by_user?: {
         id: string;
         email: string;
         role?: string;
     };
+}
+
+// Filters for bulk schedule suspension (used by admin)
+export interface SuspensionFilters {
+    week_id: string;
+    day?: string;     // If empty = entire week
+    class?: string;   // If empty = all classes
+    reason: string;   // Cancellation reason (required)
 }
 
 export interface AttendanceLog {

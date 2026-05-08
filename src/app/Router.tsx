@@ -15,6 +15,7 @@ import { StatisticsPage } from '../shared/pages/StatisticsPage';
 import SupervisorReportsPage from '../features/supervisor/pages/ReportsPage';
 import SettingsPage from '../features/supervisor/pages/SettingsPage';
 import WeeksManagementPage from '../features/admin/pages/WeeksManagementPage';
+import ScheduleManagementPage from '../features/admin/pages/ScheduleManagementPage';
 
 // Attendance Sub-pages
 import TimetablePage from '../features/supervisor/pages/TimetablePage';
@@ -118,6 +119,14 @@ export const Router = () => {
                 element={
                     <ProtectedRoute requireRole="admin">
                         <WeeksManagementPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/schedule"
+                element={
+                    <ProtectedRoute requireRole="admin">
+                        <ScheduleManagementPage />
                     </ProtectedRoute>
                 }
             />

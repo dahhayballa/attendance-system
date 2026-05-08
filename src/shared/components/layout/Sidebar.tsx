@@ -2,7 +2,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     Home, BarChart3, Settings,
     LayoutDashboard, Activity, Shield, FileText,
-    X, ChevronRight, History, Calendar, Users
+    X, ChevronRight, History, Calendar, Users,
+    ClipboardEdit
 } from 'lucide-react';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +40,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             { id: 'supervisors', label: t('admin.sidebar.supervisors'),        icon: Shield,          path: '/admin/supervisors'},
             { id: 'users',       label: t('admin.sidebar.users'),              icon: Users,           path: '/admin/users'},
             { id: 'reports',     label: t('admin.sidebar.reports'),            icon: FileText,        path: '/admin/reports'   },
+            { id: 'schedule',    label: 'Emploi du temps',                     icon: ClipboardEdit,   path: '/admin/schedule'},
             { id: 'logs',        label: t('admin.sidebar.logs', 'Registre d\'Audit'), icon: History,         path: '/admin/logs'      },
             { id: 'statistics',  label: t('admin.sidebar.statistics'),         icon: BarChart3,       path: '/admin/statistics' },
             { id: 'weeks',       label: t('admin.sidebar.weeks', 'Gestion Semaines'), icon: Calendar,    path: '/admin/weeks' },

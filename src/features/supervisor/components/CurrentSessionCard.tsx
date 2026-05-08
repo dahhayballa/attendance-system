@@ -4,7 +4,7 @@ import { useCurrentSession } from '../hooks/useCurrentSession';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { recordAttendance } from '../services/attendanceService';
 import { useToast } from '../../../shared/hooks/useToast';
-import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search } from 'lucide-react';
+import { Clock, BookOpen, User, MapPin, Building, CheckCircle, AlertTriangle, RefreshCw, AlertOctagon, Search, Ban } from 'lucide-react';
 import { Modal } from '../../../shared/components/ui/Modal';
 
 interface CurrentSessionCardProps {
@@ -147,6 +147,16 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                             </div>
                             <div className="flex gap-1.5 flex-shrink-0 relative z-10" onClick={e => e.stopPropagation()}>
 {(() => {
+    // ── Séance annulée par l'admin → bloquer tout pointage ──
+    if (session.status === 'cancelled') {
+        return (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold">
+                <Ban size={13} />
+                Séance annulée
+            </span>
+        );
+    }
+
     const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
     const isRecordedByHuman = 
         !!session.status && 

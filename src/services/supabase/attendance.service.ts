@@ -11,6 +11,9 @@ export const createAttendanceLog = async (scheduleId: string, userId: string, st
 
     if (updateError) throw updateError;
 
+    // حذف أي تسجيل قديم لنفس الحصة لضمان وجود سجل واحد فقط (آخر تغيير)
+    await supabase.from('attendance_logs').delete().eq('schedule_id', scheduleId);
+
     // ثم تسجيل اللوج في جدول السجلات
     const { data, error } = await supabase
         .from('attendance_logs')

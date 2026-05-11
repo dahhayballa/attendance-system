@@ -90,7 +90,7 @@ export const ReportsPage = () => {
             [t('admin.reports.table.teacher')]: log.teacher_name,
             [t('admin.reports.table.subject')]: log.subject,
             'Classe': log.class_name,
-            [t('admin.reports.table.status')]: log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : t('admin.reports.status.excused')
+            [t('admin.reports.table.status')]: log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : log.status === 'cancelled' ? t('admin.reports.status.cancelled') : t('admin.reports.status.excused')
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -137,7 +137,7 @@ export const ReportsPage = () => {
                                 </td>
                                 <td className="px-4 py-2.5 text-gray-400 font-bold text-xs uppercase tracking-tight">{log.user_name}</td>
                                 <td className="px-4 py-2.5">
-                                    <Badge variant={log.status} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-xl border-none">{log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : t('admin.reports.status.excused')}</Badge>
+                                    <Badge variant={log.status} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-xl border-none">{log.status === 'present' ? t('admin.reports.status.present') : log.status === 'absent' ? t('admin.reports.status.absent') : log.status === 'late' ? t('admin.reports.status.late') : log.status === 'cancelled' ? t('admin.reports.status.cancelled') : t('admin.reports.status.excused')}</Badge>
                                 </td>
                             </tr>
                         ))

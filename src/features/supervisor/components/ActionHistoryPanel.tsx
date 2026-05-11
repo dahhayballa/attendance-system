@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 interface ActionLog {
     id: string;
     schedule_id: string;
-    status: 'present' | 'absent' | 'late' | 'excused';
+    status: 'present' | 'absent' | 'late' | 'excused' | 'cancelled';
     recorded_at: string;
     reason: string | null;
     schedule: {

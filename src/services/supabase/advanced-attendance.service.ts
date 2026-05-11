@@ -74,7 +74,10 @@ export const createAdvancedAttendance = async (
   const lateMinutes = status === 'late' ? calculateLateMinutes(scheduledStart, now) : 0
   const points = calculatePoints(status, lateMinutes)
   const deviceInfo = getDeviceInfo()
-  
+
+  // Supprimer l'ancien pointage pour cette séance avant d'enregistrer le nouveau
+  await supabase.from('attendance_logs').delete().eq('schedule_id', scheduleId)
+
   const { data: attendanceLog, error: logError } = await supabase
     .from('attendance_logs')
     .insert({

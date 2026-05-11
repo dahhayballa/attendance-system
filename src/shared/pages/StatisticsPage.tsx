@@ -107,7 +107,7 @@ export const StatisticsPage = () => {
 
     return (
         <Layout>
-            <div className={`space-y-8 animate-in fade-in duration-700 font-sans relative ${loading && !isInitialLoading ? 'opacity-60 pointer-events-none transition-opacity' : ''}`}>
+            <div className={`space-y-8 animate-in fade-in duration-700 font-sans relative ${i18n.language === 'ar' ? 'font-arabic' : ''} ${loading && !isInitialLoading ? 'opacity-60 pointer-events-none transition-opacity' : ''}`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 {/* Subtle loading indicator at the top */}
                 {loading && !isInitialLoading && (
                     <div className="fixed top-0 left-0 right-0 z-[200]">
@@ -172,7 +172,7 @@ export const StatisticsPage = () => {
                                 />
                                 <div className="flex items-center gap-2 p-2 px-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-black transition-all">
                                     <Calendar size={14} className="text-gray-400 group-hover:text-black" />
-                                    <span className="text-[10px] font-black text-gray-950">{new Date(customDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                                    <span className="text-[10px] font-black text-gray-950">{new Date(customDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', { day: '2-digit', month: '2-digit' })}</span>
                                 </div>
                             </div>
                         )}
@@ -192,8 +192,9 @@ export const StatisticsPage = () => {
                                         end.setDate(end.getDate() + 6);
                                         const sDay = start.getDate();
                                         const eDay = end.getDate();
-                                        const sMonth = start.toLocaleString('fr-FR', { month: 'short' });
-                                        const eMonth = end.toLocaleString('fr-FR', { month: 'short' });
+                                        const locale = i18n.language === 'ar' ? 'ar-EG' : 'fr-FR';
+                                        const sMonth = start.toLocaleString(locale, { month: 'short' });
+                                        const eMonth = end.toLocaleString(locale, { month: 'short' });
                                         return sMonth === eMonth
                                             ? `${sDay} - ${eDay} ${sMonth}.`
                                             : `${sDay} ${sMonth}. - ${eDay} ${eMonth}.`;
@@ -338,6 +339,7 @@ export const StatisticsPage = () => {
                                                 dataKey="date" 
                                                 axisLine={false} 
                                                 tickLine={false} 
+                                                reversed={i18n.language === 'ar'}
                                                 tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
                                                 tickFormatter={(str) => {
                                                     const d = new Date(str);

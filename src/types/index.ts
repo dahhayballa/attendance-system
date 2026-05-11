@@ -41,7 +41,7 @@ export interface AttendanceLog {
     id: string;
     schedule_id: string;
     user_id: string;
-    status: 'present' | 'absent' | 'late' | 'excused';
+    status: 'present' | 'absent' | 'late' | 'excused' | 'cancelled';
     created_at: string;
     teacher_name?: string;
     class_name?: string;

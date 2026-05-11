@@ -33,6 +33,9 @@ export const recordAttendance = async (
     notes?: string,
     sessionDate?: string
 ): Promise<Attendance> => {
+    // Delete existing logs for this schedule first to only keep the latest
+    await supabase.from('attendance_logs').delete().eq('schedule_id', scheduleId);
+
     const { data, error } = await supabase
         .from('attendance_logs')
         .insert([{
@@ -100,6 +103,9 @@ export const autoMarkEndedSessionsAbsent = async (
         recorded_at: nowIso,
         reason: 'Absence automatique: séance terminée sans pointage',
     }));
+
+    // Delete existing logs for these schedules
+    await supabase.from('attendance_logs').delete().in('schedule_id', ids);
 
     const { error: logsError } = await supabase
         .from('attendance_logs')

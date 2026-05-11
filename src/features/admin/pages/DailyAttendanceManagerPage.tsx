@@ -151,6 +151,7 @@ export const DailyAttendanceManagerPage = () => {
                                 <option value="present">{t('admin.daily.btnPresent')}</option>
                                 <option value="absent">{t('admin.daily.btnAbsent')}</option>
                                 <option value="late">{t('admin.daily.btnLate')}</option>
+                                <option value="cancelled">{t('admin.reports.status.cancelled')}</option>
                             </select>
                             
                             <select

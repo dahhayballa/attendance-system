@@ -324,7 +324,7 @@ export const useStatistics = () => {
             const advUnreadCount = notifData?.filter(n => !n.read).length || 0;
 
             // Daily Trend (dynamic timeframe)
-            const dailyTrend = processDailyTrend(filteredLogs, daysToProcess, timeframe === 'day' ? new Date(customDate) : new Date());
+            const dailyTrend = processDailyTrend(filteredLogs, daysToProcess, startDate);
 
             // Grouped Stats (Class, Teacher, Subject)
             const byClass = processGroupedStats(filteredLogs, 'class_name');
@@ -372,12 +372,12 @@ export const useStatistics = () => {
 /**
  * Helper to process daily trend from logs
  */
-function processDailyTrend(logs: any[], daysCount: number, referenceDate: Date): DailyTrend[] {
+function processDailyTrend(logs: any[], daysCount: number, startDate: Date): DailyTrend[] {
     const days: Record<string, { presence: number, late: number, absence: number }> = {};
     
-    for (let i = daysCount - 1; i >= 0; i--) {
-        const d = new Date(referenceDate);
-        d.setDate(d.getDate() - i);
+    for (let i = 0; i < daysCount; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
         const dateStr = d.toISOString().split('T')[0];
         days[dateStr] = { presence: 0, late: 0, absence: 0 };
     }

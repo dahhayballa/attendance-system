@@ -152,7 +152,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
         return (
             <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold">
                 <Ban size={13} />
-                Séance annulée
+                {t('admin.reports.status.cancelled')}
             </span>
         );
     }
@@ -309,8 +309,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                     label: t('supervisor.currentSessionCard.statusLabel'),
                                     value: (() => {
                                         const isAutoAbsent = infoSession.status === 'absent' && !infoSession.recorded_by;
-                                        const isRec = infoSession.status && infoSession.status !== 'pending' && !isAutoAbsent;
-                                        
+                                        const isRec = infoSession.status && infoSession.status !== 'pending' && !isAutoAbsent ;
                                         if (isRec) {
                                             const formatOpts: Intl.DateTimeFormatOptions = { 
                                                 hour: '2-digit', 
@@ -324,6 +323,7 @@ const CurrentSessionCard = ({ onAttendanceRecorded, className = '' }: CurrentSes
                                             if (infoSession.status === 'present') return <span dir="ltr">{t('supervisor.currentSessionCard.presentAt')} {timeStr}</span>;
                                             if (infoSession.status === 'late') return <span dir="ltr">{t('supervisor.currentSessionCard.lateAt')} {timeStr}</span>;
                                             if (infoSession.status === 'absent') return t('supervisor.currentSessionCard.absentRecorded');
+                                            if (infoSession.status === 'cancelled') return t('supervisor.currentSessionCard.cancelled');
                                             return `${t('supervisor.currentSessionCard.statusLabel')} : ${infoSession.status}`;
                                         }
                                         const cm = currentTime.getHours() * 60 + currentTime.getMinutes();

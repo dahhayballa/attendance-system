@@ -127,7 +127,7 @@ export const LiveDashboardPage = () => {
             [t('admin.logs.colTeacher')]: log.schedule?.teacher,
             [t('admin.logs.colClass')]: log.schedule?.class,
             [t('admin.logs.colSubject')]: log.schedule?.subject,
-            [t('admin.logs.colStatus')]: log.status === 'present' ? t('admin.liveDashboard.statusPresent') : log.status === 'absent' ? t('admin.liveDashboard.statusAbsent') : t('admin.liveDashboard.statusLate'),
+            [t('admin.logs.colStatus')]: log.status === 'present' ? t('admin.liveDashboard.statusPresent') : log.status === 'absent' ? t('admin.liveDashboard.statusAbsent') : log.status === 'late' ? t('admin.liveDashboard.statusLate') : log.status === 'cancelled' ? t('admin.liveDashboard.statusCancelled') : t('admin.liveDashboard.statusExcused'),
             [t('admin.logs.colSupervisor')]: log.user_name
         }));
 
@@ -263,7 +263,7 @@ export const LiveDashboardPage = () => {
                                                         }`}>
                                                             {log.status === 'present' ? t('admin.liveDashboard.statusPresent') : 
                                                              log.status === 'absent' ? t('admin.liveDashboard.statusAbsent') : 
-                                                             log.status === 'late' ? t('admin.liveDashboard.statusLate') : t('admin.liveDashboard.statusExcused')}
+                                                             log.status === 'late' ? t('admin.liveDashboard.statusLate') : log.status === 'cancelled' ? t('admin.liveDashboard.statusCancelled') : t('admin.liveDashboard.statusExcused')}
                                                         </span>
                                                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-tight">
                                                             <Users size={10} />

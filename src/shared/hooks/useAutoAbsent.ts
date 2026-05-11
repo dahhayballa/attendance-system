@@ -72,13 +72,16 @@ export const useAutoAbsent = (onDone?: () => void) => {
       if (!toMark.length) return;
 
       // ── 5. Insertion des absences automatiques ──
+      // Supprimer les anciens logs éventuels pour ne garder que le dernier changement
+      await supabase.from('attendance_logs').delete().in('schedule_id', toMark);
+
       await supabase.from('attendance_logs').insert(
         toMark.map(schedule_id => ({
           schedule_id,
           status:      'absent',
           recorded_by: null, // NULL = système, pas un humain
           recorded_at: new Date().toISOString(),
-          notes:       'Absence automatique — session terminée sans enregistrement',
+          reason:      'Absence automatique — session terminée sans enregistrement',
         }))
       );
 

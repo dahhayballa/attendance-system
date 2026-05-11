@@ -29,6 +29,17 @@ export const updateScheduleStatus = async (scheduleId: string, status: 'present'
         .single();
 
     if (error) throw error;
+
+    // Supprimer l'ancien pointage pour cette séance, puis insérer le nouveau
+    await supabase.from('attendance_logs').delete().eq('schedule_id', scheduleId);
+    await supabase.from('attendance_logs').insert({
+        schedule_id: scheduleId,
+        recorded_by: userId,
+        status,
+        recorded_at: new Date().toISOString(),
+        session_date: new Date().toISOString().split('T')[0],
+    });
+
     return data as Schedule;
 };
 

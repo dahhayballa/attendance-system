@@ -152,6 +152,9 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
 
             if (updateError) throw updateError;
 
+            // Delete existing log to keep only the latest change
+            await supabase.from('attendance_logs').delete().eq('schedule_id', scheduleId);
+
             // Insérer dans attendance_logs
             if (status !== 'not_recorded') {
                 await supabase.from('attendance_logs').insert([{
@@ -160,6 +163,7 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
                     status,
                     recorded_at: new Date().toISOString(),
                     session_date: new Date().toISOString().split('T')[0],
+                    reason: notes || null
                 }]);
             }
 
@@ -194,6 +198,9 @@ export const useAttendanceData = (options: UseAttendanceDataOptions): UseAttenda
                 .in('id', scheduleIds);
 
             if (updateError) throw updateError;
+
+            // Supprimer les anciens logs
+            await supabase.from('attendance_logs').delete().in('schedule_id', scheduleIds);
 
             // Insérer les logs
             const logs = scheduleIds.map(sid => ({

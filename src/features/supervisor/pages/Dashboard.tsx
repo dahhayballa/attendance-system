@@ -5,7 +5,7 @@ import { supabase } from '../../../services/supabase/client';
 import { useActiveWeek } from '../../../shared/hooks/useActiveWeek';
 import SupervisorLayout from '../components/SupervisorLayout';
 import {
-    CheckCircle, XCircle, Clock, AlertTriangle} from 'lucide-react';
+    CheckCircle, XCircle, Clock, AlertTriangle, Ban} from 'lucide-react';
 import { useAutoAbsent } from '../../../shared/hooks/useAutoAbsent';
 
 const SCHOOL_TIMEZONE = 'Africa/Nouakchott';
@@ -73,7 +73,7 @@ const Dashboard = () => {
     const { t, i18n } = useTranslation();
     const { user } = useAuth();
     const { activeWeek } = useActiveWeek();
-    const [stats, setStats]             = useState({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
+    const [stats, setStats]             = useState({ total: 0, present: 0, absent: 0, late: 0, pending: 0, cancelled: 0 });
     const [loading, setLoading]         = useState(true);
     const [time, setTime]               = useState(new Date());
 
@@ -132,13 +132,24 @@ const Dashboard = () => {
                     if (!uniqueLogs.has(log.schedule_id)) uniqueLogs.set(log.schedule_id, log.status);
                 });
 
-                const present = Array.from(uniqueLogs.values()).filter(s => s === 'present' || s === 'completed').length;
-                const absent = Array.from(uniqueLogs.values()).filter(s => s === 'absent').length;
-                const late = Array.from(uniqueLogs.values()).filter(s => s === 'late').length;
+                const cancelledIds = new Set(scheds.filter(s => s.status === 'cancelled').map(s => s.id));
+                const cancelled = cancelledIds.size;
 
-                setStats({ total, present, absent, late, pending: total - present - absent - late });
+                let present = 0;
+                let absent = 0;
+                let late = 0;
+
+                uniqueLogs.forEach((status, schedule_id) => {
+                    if (!cancelledIds.has(schedule_id)) {
+                        if (status === 'present' || status === 'completed') present++;
+                        else if (status === 'absent') absent++;
+                        else if (status === 'late') late++;
+                    }
+                });
+
+                setStats({ total, present, absent, late, pending: total - present - absent - late - cancelled, cancelled });
             } else {
-                setStats({ total: 0, present: 0, absent: 0, late: 0, pending: 0 });
+                setStats({ total: 0, present: 0, absent: 0, late: 0, pending: 0, cancelled: 0 });
             }
         } finally { setLoading(false); }
     }, [user?.name, activeWeek?.id]);
@@ -199,13 +210,13 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* ══ STATS GRID ══ */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                     {[
                         { label: t('supervisor.dashboard.statsPresent'),    value: stats.present, icon: CheckCircle,   bg: '#f0fdf4', border: '#bbf7d0', iconBg: '#16a34a', num: '#15803d' },
                         { label: t('supervisor.dashboard.statsAbsent'),     value: stats.absent,  icon: XCircle,       bg: '#fef2f2', border: '#fecaca', iconBg: '#dc2626', num: '#b91c1c' },
                         { label: t('supervisor.dashboard.statsLate'),   value: stats.late,    icon: Clock,         bg: '#fffbeb', border: '#fde68a', iconBg: '#d97706', num: '#b45309' },
                         { label: t('supervisor.dashboard.statsPending'),  value: stats.pending, icon: AlertTriangle, bg: '#f9fafb', border: '#e5e7eb', iconBg: '#6b7280', num: '#374151' },
+                        { label: t('supervisor.dashboard.statsCancelled'),  value: stats.cancelled, icon: Ban, bg: '#fff1f2', border: '#ffe4e6', iconBg: '#e11d48', num: '#9f1239' },
                     ].map(({ label, value, icon: Icon, bg, border, iconBg, num }) => (
                         <div key={label} className="rounded-2xl p-4 flex items-center gap-3"
                             style={{ background: bg, border: `1px solid ${border}` }}>

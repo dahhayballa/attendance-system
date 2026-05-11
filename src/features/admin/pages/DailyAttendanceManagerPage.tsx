@@ -201,6 +201,7 @@ export const DailyAttendanceManagerPage = () => {
 
                                         const isPresent = session.status === 'present';
                                         const isLate = session.status === 'late';
+                                        const isCancelled = session.status === 'cancelled';
                                         const isAutoAbsent = session.status === 'absent' && !session.recorded_by;
                                         const isPending = !session.status || session.status === 'pending' || isAutoAbsent;
                                         
@@ -226,6 +227,10 @@ export const DailyAttendanceManagerPage = () => {
                                                     {isPending ? (
                                                         <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-gray-100">
                                                             {t('admin.daily.statusPending')}
+                                                        </span>
+                                                    ) : isCancelled ? (
+                                                        <span className="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                                            Annulée
                                                         </span>
                                                     ) : (
                                                         <span className={`px-2 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${

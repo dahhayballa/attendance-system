@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 export interface BadgeProps {
     children: ReactNode;
-    variant?: 'info' | 'success' | 'warning' | 'danger' | 'primary' | 'pending' | 'present' | 'absent' | 'late' | 'excused';
+    variant?: 'info' | 'success' | 'warning' | 'danger' | 'primary' | 'pending' | 'present' | 'absent' | 'late' | 'excused' | 'cancelled';
     className?: string;
 }
 
